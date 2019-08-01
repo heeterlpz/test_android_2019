@@ -5,8 +5,10 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.ImageFormat;
-import android.graphics.Paint;
+import android.graphics.Matrix;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
+import android.graphics.YuvImage;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -15,28 +17,29 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.media.Image;
 import android.media.ImageReader;
+import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
-import android.view.SurfaceHolder;
 import android.view.TextureView;
-import android.view.View;
-import android.widget.Button;
 import android.widget.Toast;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+
 public class MainActivity extends AppCompatActivity {
     private final static String TAG = "MainActivity";
-    private Button takePicture;
     private TextureView mTextureView;
     private TextureView textureViewAfterEdit;
     private TextureView.SurfaceTextureListener mSurfaceTextureListener;
@@ -48,7 +51,8 @@ public class MainActivity extends AppCompatActivity {
     private Handler mHandler;
     private CaptureRequest.Builder mPreviewBuilder;
     private ImageReader imageReader;
-    private android.graphics.Canvas canvas;
+    private Surface mSurface;
+    private NV21ToBitmap changer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,29 +70,42 @@ public class MainActivity extends AppCompatActivity {
         }
 
         initSurfaceView();
-
-        takePicture = (Button) findViewById(R.id.take_picture);
-        takePicture.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                takePicture();
-            }
-        });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
+        textureViewAfterEdit.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+            @Override
+            public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+                SurfaceTexture surfaceTexture=textureViewAfterEdit.getSurfaceTexture();
+                surfaceTexture.setDefaultBufferSize(width,height);
+                changer=new NV21ToBitmap(getApplicationContext());
+                mSurface=new Surface(surfaceTexture);
+            }
+
+            @Override
+            public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+
+            }
+
+            @Override
+            public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+                return false;
+            }
+
+            @Override
+            public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+
+            }
+        });
     }
 
     @Override
     protected void onDestroy() {
         destroyCamera();
         super.onDestroy();
-    }
-
-    private void takePicture() {
     }
 
     private void initSurfaceView() {
@@ -151,9 +168,10 @@ public class MainActivity extends AppCompatActivity {
                 Integer facing=cameraCharacteristics.get(CameraCharacteristics.LENS_FACING);
                 Log.d(TAG, "initCamera: facing="+facing);
                 Log.d(TAG, "initCamera: cameraID="+cameraID);
-                if(facing==null||!facing.equals(CameraCharacteristics.LENS_FACING_FRONT))continue;
-                this.cameraID=facing.toString();
-                //在这里可以获取相机的特性
+                if(facing!=null&&facing==CameraCharacteristics.LENS_FACING_FRONT)continue;
+                this.cameraID=cameraID;
+                //获取相机角度
+
                 initImageReader();
             }
         } catch (CameraAccessException e) {
@@ -162,8 +180,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initImageReader() {
-        imageReader=ImageReader.newInstance(mPreviewSize.getWidth(),mPreviewSize.getHeight(), ImageFormat.YUV_420_888,5);
+        imageReader=ImageReader.newInstance(mPreviewSize.getWidth(),mPreviewSize.getHeight(),
+                ImageFormat.YUV_420_888,5); //设置的格式为yuv420，其实可以直接设置为nv21
         imageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
+            @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void onImageAvailable(ImageReader reader) {
                 //获得相机数据YUV420
@@ -172,9 +192,17 @@ public class MainActivity extends AppCompatActivity {
                     Log.e(TAG, "onImageAvailable .............mImage == null");
                     return;
                 }
-                Log.d(TAG, "onImageAvailable: image="+mImage.toString());
-                // TODO: 19-7-31 将获取的数据输出到TextureView
+                if(mSurface!=null) {
+                    Canvas canvas = mSurface.lockHardwareCanvas();
+                    YuvImage yuv=new YuvImage(getDataFromImage(mImage),ImageFormat.NV21,mImage.getWidth(),mImage.getHeight(),null);
 
+                    canvas.drawBitmap(changer.nv21ToBitmap(
+                            rotateYUV420Degree90(yuv.getYuvData(),yuv.getWidth(),yuv.getHeight())
+                            ,yuv.getHeight(),yuv.getWidth())
+                            ,null,mImage.getCropRect(),null);
+
+                    mSurface.unlockCanvasAndPost(canvas);
+                }
                 mImage.close();
             }
         },mHandler);
@@ -239,5 +267,89 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(MainActivity.this, "配置失败", Toast.LENGTH_SHORT).show();
         }
     };
+
+    //解析yuv420数据为nv21
+    private static byte[] getDataFromImage(Image image) {
+        Rect crop = image.getCropRect();
+        int format = image.getFormat();
+        int width = crop.width();
+        int height = crop.height();
+        Image.Plane[] planes = image.getPlanes();
+        byte[] data = new byte[width * height * ImageFormat.getBitsPerPixel(format) / 8];
+        byte[] rowData = new byte[planes[0].getRowStride()];
+        int channelOffset = 0;
+        int outputStride = 1;
+        for (int i = 0; i < planes.length; i++) {
+            switch (i) {
+                case 0:
+                    channelOffset = 0;
+                    outputStride = 1;
+                    break;
+                case 1:
+                    channelOffset = width * height + 1;
+                    outputStride = 2;
+                    break;
+                case 2:
+                    channelOffset = width * height;
+                    outputStride = 2;
+                    break;
+            }
+            ByteBuffer buffer = planes[i].getBuffer();
+            int rowStride = planes[i].getRowStride();
+            int pixelStride = planes[i].getPixelStride();
+
+            int shift = (i == 0) ? 0 : 1;
+            int w = width >> shift;
+            int h = height >> shift;
+            buffer.position(rowStride * (crop.top >> shift) + pixelStride * (crop.left >> shift));
+            for (int row = 0; row < h; row++) {
+                int length;
+                if (pixelStride == 1 && outputStride == 1) {
+                    length = w;
+                    buffer.get(data, channelOffset, length);
+                    channelOffset += length;
+                } else {
+                    length = (w - 1) * pixelStride + 1;
+                    buffer.get(rowData, 0, length);
+                    for (int col = 0; col < w; col++) {
+                        data[channelOffset] = rowData[col * pixelStride];
+                        channelOffset += outputStride;
+                    }
+                }
+                if (row < h - 1) {
+                    buffer.position(buffer.position() + rowStride - length);
+                }
+            }
+        }
+        return data;
+    }
+
+    //come from stackoverflow
+    private byte[] rotateYUV420Degree90(byte[] data, int imageWidth, int imageHeight) {
+        byte [] yuv = new byte[imageWidth*imageHeight*3/2];
+        // Rotate the Y luma
+        int i = 0;
+        for(int x = 0;x < imageWidth;x++)
+        {
+            for(int y = imageHeight-1;y >= 0;y--)
+            {
+                yuv[i] = data[y*imageWidth+x];
+                i++;
+            }
+        }
+        // Rotate the U and V color components
+        i = imageWidth*imageHeight*3/2-1;
+        for(int x = imageWidth-1;x > 0;x=x-2)
+        {
+            for(int y = 0;y < imageHeight/2;y++)
+            {
+                yuv[i] = data[(imageWidth*imageHeight)+(y*imageWidth)+x];
+                i--;
+                yuv[i] = data[(imageWidth*imageHeight)+(y*imageWidth)+(x-1)];
+                i--;
+            }
+        }
+        return yuv;
+    }
 }
 
