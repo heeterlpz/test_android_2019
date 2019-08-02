@@ -62,6 +62,7 @@ public class DrawSurface {
                     }else {
                         YuvImage yuv=yuvImageList.get(0);
                         if(yuv!=null){
+                            Log.d(TAG, "run: success get 1 image");
                             Canvas canvas=mSurface.lockHardwareCanvas();
                             Bitmap bitmap=changer.nv21ToBitmap(
                                     rotateYUV420Degree90(yuv.getYuvData(),yuv.getWidth(),yuv.getHeight())
@@ -71,7 +72,17 @@ public class DrawSurface {
                             mSurface.unlockCanvasAndPost(canvas);
                             bitmap.recycle();
                         }
-                        if(!yuvImageList.isEmpty())yuvImageList.remove(0);
+                        Log.d(TAG, "run: list size="+yuvImageList.size());
+                        //可以观察到内存泄露，暂时先在size大于一定值时clear
+                        // TODO: 19-8-2 找到内存泄露的原因
+                        if(yuvImageList.size()>5){
+                            yuvImageList.clear();
+                            Log.d(TAG, "run: remove all hanppened");
+                        }
+                        if(!yuvImageList.isEmpty()){
+                            yuvImageList.remove(0);
+                            Log.d(TAG, "run: success remove 1 image");
+                        }
                     }
                 }
             }

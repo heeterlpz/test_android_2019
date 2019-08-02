@@ -48,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
     private Surface mSurface;
     private DrawSurface drawSurface;
 
+    // TODO: 19-8-2 整理mainActivity结构 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
