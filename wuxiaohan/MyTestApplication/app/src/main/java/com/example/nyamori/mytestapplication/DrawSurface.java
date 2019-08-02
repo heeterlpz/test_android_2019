@@ -24,9 +24,14 @@ public class DrawSurface {
     private boolean isThreadRunning=false;
     private boolean isPause=false;
 
+    private int fpsCount;
+    private long fpsTime;
+
     public DrawSurface(int width, int height,Surface surface, Context context){
         this.width=width;
         this.height=height;
+        fpsCount=0;
+        fpsTime=System.currentTimeMillis();
         yuvImageList = new ArrayList<>();
         changer=new NV21ToBitmap(context);
         mSurface=surface;
@@ -77,11 +82,18 @@ public class DrawSurface {
                         // TODO: 19-8-2 找到内存泄露的原因
                         if(yuvImageList.size()>5){
                             yuvImageList.clear();
-                            Log.d(TAG, "run: remove all hanppened");
+                            Log.d(TAG, "run: remove all happened");
                         }
                         if(!yuvImageList.isEmpty()){
                             yuvImageList.remove(0);
                             Log.d(TAG, "run: success remove 1 image");
+                            fpsCount++;
+                            long nowTime=System.currentTimeMillis();
+                            if((nowTime-fpsTime)>999){
+                                Log.d(TAG, "run: now fps = "+fpsCount);
+                                fpsTime=nowTime;
+                                fpsCount=0;
+                            }
                         }
                     }
                 }
@@ -101,7 +113,7 @@ public class DrawSurface {
         yuvImageList.clear();
     }
 
-    //come from stackoverflow
+    //come from stack overflow
     private byte[] rotateYUV420Degree90(byte[] data, int imageWidth, int imageHeight) {
         byte [] yuv = new byte[imageWidth*imageHeight*3/2];
         // Rotate the Y luma

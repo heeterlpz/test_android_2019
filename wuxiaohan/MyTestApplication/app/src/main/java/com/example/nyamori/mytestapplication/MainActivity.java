@@ -48,23 +48,36 @@ public class MainActivity extends AppCompatActivity {
     private Surface mSurface;
     private DrawSurface drawSurface;
 
-    // TODO: 19-8-2 整理mainActivity结构 
+    // TODO: 19-8-2 整理mainActivity结构
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(MainActivity.this, new String[]{"android.permission.CAMERA"}, 1);
-        }
 
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.hide();
         }
 
-        initSurfaceView();
+
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{"android.permission.CAMERA"}, 1);
+        }else {
+            initSurfaceView();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if(requestCode==1){
+            for(int i=0;i<permissions.length;i++){
+                if(grantResults[i]==PackageManager.PERMISSION_GRANTED){
+                    initSurfaceView();
+                }
+            }
+        }
     }
 
     @Override
@@ -77,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
         textureViewAfterEdit.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
             @Override
             public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+                Log.d(TAG, "onSurfaceTextureAvailable: use available");
                 SurfaceTexture surfaceTexture=textureViewAfterEdit.getSurfaceTexture();
                 surfaceTexture.setDefaultBufferSize(width,height);
                 mSurface=new Surface(surfaceTexture);
@@ -85,17 +99,18 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-
+                Log.d(TAG, "onSurfaceTextureAvailable: use size changed");
             }
 
             @Override
             public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+                Log.d(TAG, "onSurfaceTextureAvailable: use destroyed");
                 return false;
             }
 
             @Override
             public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-
+                Log.d(TAG, "onSurfaceTextureAvailable: use update");
             }
         });
     }
@@ -328,34 +343,5 @@ public class MainActivity extends AppCompatActivity {
         }
         return data;
     }
-
-    //come from stackoverflow
-    private byte[] rotateYUV420Degree90(byte[] data, int imageWidth, int imageHeight) {
-        byte [] yuv = new byte[imageWidth*imageHeight*3/2];
-        // Rotate the Y luma
-        int i = 0;
-        for(int x = 0;x < imageWidth;x++)
-        {
-            for(int y = imageHeight-1;y >= 0;y--)
-            {
-                yuv[i] = data[y*imageWidth+x];
-                i++;
-            }
-        }
-        // Rotate the U and V color components
-        i = imageWidth*imageHeight*3/2-1;
-        for(int x = imageWidth-1;x > 0;x=x-2)
-        {
-            for(int y = 0;y < imageHeight/2;y++)
-            {
-                yuv[i] = data[(imageWidth*imageHeight)+(y*imageWidth)+x];
-                i--;
-                yuv[i] = data[(imageWidth*imageHeight)+(y*imageWidth)+(x-1)];
-                i--;
-            }
-        }
-        return yuv;
-    }
-
 }
 
