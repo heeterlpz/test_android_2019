@@ -1,11 +1,7 @@
 package com.example.nyamori.mytestapplication;
 
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.graphics.ImageFormat;
-import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.graphics.YuvImage;
@@ -32,8 +28,6 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.widget.Toast;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -52,7 +46,7 @@ public class MainActivity extends AppCompatActivity {
     private CaptureRequest.Builder mPreviewBuilder;
     private ImageReader imageReader;
     private Surface mSurface;
-    private NV21ToBitmap changer;
+    private DrawSurface drawSurface;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,14 +69,17 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        Log.d(TAG, "onResume: start");
+        if(drawSurface!=null
+                &&drawSurface.isPause()==true)drawSurface.startThread();
         mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
         textureViewAfterEdit.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
             @Override
             public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
                 SurfaceTexture surfaceTexture=textureViewAfterEdit.getSurfaceTexture();
                 surfaceTexture.setDefaultBufferSize(width,height);
-                changer=new NV21ToBitmap(getApplicationContext());
                 mSurface=new Surface(surfaceTexture);
+                drawSurface=new DrawSurface(width,height,mSurface,getApplicationContext());
             }
 
             @Override
@@ -100,6 +97,12 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+    }
+
+    @Override
+    protected void onPause() {
+        if(drawSurface.isPause()==false)drawSurface.pauseThread();
+        super.onPause();
     }
 
     @Override
@@ -156,6 +159,14 @@ public class MainActivity extends AppCompatActivity {
             mCamera.close();
             mCamera=null;
         }
+        if(imageReader!=null){
+            imageReader.close();
+            imageReader=null;
+        }
+        if(drawSurface!=null){
+            drawSurface.closeThread();
+            drawSurface=null;
+        }
     }
 
     private void initCamera(int width, int height) {
@@ -181,7 +192,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void initImageReader() {
         imageReader=ImageReader.newInstance(mPreviewSize.getWidth(),mPreviewSize.getHeight(),
-                ImageFormat.YUV_420_888,5); //设置的格式为yuv420，其实可以直接设置为nv21
+                ImageFormat.YUV_420_888,2); //设置的格式为yuv420，其实可以直接设置为nv21
         imageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
@@ -192,16 +203,9 @@ public class MainActivity extends AppCompatActivity {
                     Log.e(TAG, "onImageAvailable .............mImage == null");
                     return;
                 }
-                if(mSurface!=null) {
-                    Canvas canvas = mSurface.lockHardwareCanvas();
+                if(drawSurface!=null) {
                     YuvImage yuv=new YuvImage(getDataFromImage(mImage),ImageFormat.NV21,mImage.getWidth(),mImage.getHeight(),null);
-
-                    canvas.drawBitmap(changer.nv21ToBitmap(
-                            rotateYUV420Degree90(yuv.getYuvData(),yuv.getWidth(),yuv.getHeight())
-                            ,yuv.getHeight(),yuv.getWidth())
-                            ,null,mImage.getCropRect(),null);
-
-                    mSurface.unlockCanvasAndPost(canvas);
+                    drawSurface.putNV21Data(yuv);
                 }
                 mImage.close();
             }
@@ -351,5 +355,6 @@ public class MainActivity extends AppCompatActivity {
         }
         return yuv;
     }
+
 }
 
