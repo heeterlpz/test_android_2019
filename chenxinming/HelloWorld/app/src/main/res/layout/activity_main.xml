@@ -5,7 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.example.chenxinming.helloworld.MainActivity">
+    tools:context="com.example.chenxinming.helloworld.MainActivity"
+    android:weightSum="1">
 
     <!--<ImageView-->
         <!--android:layout_width="300dp"-->
@@ -15,14 +16,20 @@
 
     <SurfaceView
         android:layout_width="fill_parent"
-        android:layout_height="400dp"
+        android:layout_height="230dp"
         android:id="@+id/surfaceview"/>
+
+    <SurfaceView
+        android:layout_width="match_parent"
+        android:layout_height="230dp"
+        android:id="@+id/surfaceview1"/>
 
     <Button
         android:id = "@+id/takephoto"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity = "center"
-        android:text="拍照" />
+        android:text="拍照"
+        android:onClick="takePhoto"/>
 
 </LinearLayout>
