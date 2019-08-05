@@ -29,7 +29,7 @@ import java.nio.FloatBuffer;
  * Some OpenGL utility functions.
  */
 public class GlUtil {
-    public static final String TAG = "Grafika";
+    public static final String TAG = "OpenGLES";
 
     /** Identity matrix for general use.  Don't modify or life will get weird. */
     public static final float[] IDENTITY_MATRIX;
@@ -49,26 +49,24 @@ public class GlUtil {
      * @return A handle to the program, or 0 on failure.
      */
     public static int createProgram(String vertexSource, String fragmentSource) {
+        int[] linkStatus = new int[1];
+        Log.d(TAG, "createProgram:before 2d create");
         int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexSource);
         if (vertexShader == 0) {
+            Log.d(TAG, "createProgram: vertex fail");
             return 0;
         }
         int pixelShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentSource);
         if (pixelShader == 0) {
             return 0;
         }
-
         int program = GLES20.glCreateProgram();
         checkGlError("glCreateProgram");
-        if (program == 0) {
-            Log.e(TAG, "Could not create program");
-        }
         GLES20.glAttachShader(program, vertexShader);
-        checkGlError("glAttachShader");
+        checkGlError("glAttachShader for Vertex");
         GLES20.glAttachShader(program, pixelShader);
-        checkGlError("glAttachShader");
+        checkGlError("glAttachShader for Pixel");
         GLES20.glLinkProgram(program);
-        int[] linkStatus = new int[1];
         GLES20.glGetProgramiv(program, GLES20.GL_LINK_STATUS, linkStatus, 0);
         if (linkStatus[0] != GLES20.GL_TRUE) {
             Log.e(TAG, "Could not link program: ");
@@ -85,6 +83,7 @@ public class GlUtil {
      * @return A handle to the shader, or 0 on failure.
      */
     public static int loadShader(int shaderType, String source) {
+        Log.d(TAG, "loadShader: start");
         int shader = GLES20.glCreateShader(shaderType);
         checkGlError("glCreateShader type=" + shaderType);
         GLES20.glShaderSource(shader, source);
@@ -146,10 +145,8 @@ public class GlUtil {
 
         // Configure min/mag filtering, i.e. what scaling method do we use if what we're rendering
         // is smaller or larger than the source image.
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER,
-                GLES20.GL_LINEAR);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER,
-                GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
         GlUtil.checkGlError("loadImageTexture");
 
         // Load the data from the buffer into the texture handle.
@@ -158,6 +155,13 @@ public class GlUtil {
         GlUtil.checkGlError("loadImageTexture");
 
         return textureHandle;
+    }
+
+    public static void releaseTexture(int textureId) {
+        if(textureId >= 0) {
+            GLES20.glDeleteTextures(1, new int[]{textureId}, 0);
+            checkGlError("glDeleteTextures");
+        }
     }
 
     /**

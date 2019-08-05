@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.os.Build;
+import android.os.Handler;
 import android.support.annotation.RequiresApi;
 import android.util.Log;
 import android.view.Surface;
@@ -24,12 +25,15 @@ public class DrawSurface {
     private boolean isThreadRunning=false;
     private boolean isPause=false;
 
+    private Handler mUIHandler;
+
     private int fpsCount;
     private long fpsTime;
 
-    public DrawSurface(int width, int height,Surface surface, Context context){
+    public DrawSurface(int width, int height, Surface surface,Handler mUIHandler, Context context){
         this.width=width;
         this.height=height;
+        this.mUIHandler=mUIHandler;
         fpsCount=0;
         fpsTime=System.currentTimeMillis();
         yuvImageList = new ArrayList<>();
@@ -90,7 +94,7 @@ public class DrawSurface {
                             fpsCount++;
                             long nowTime=System.currentTimeMillis();
                             if((nowTime-fpsTime)>999){
-                                Log.d(TAG, "run: now fps = "+fpsCount);
+                                mUIHandler.obtainMessage(11,fpsCount,0).sendToTarget();
                                 fpsTime=nowTime;
                                 fpsCount=0;
                             }

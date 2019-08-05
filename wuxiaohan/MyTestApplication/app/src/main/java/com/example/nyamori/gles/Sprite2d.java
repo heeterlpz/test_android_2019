@@ -17,13 +17,12 @@
 package com.example.nyamori.gles;
 
 import android.opengl.Matrix;
-import android.util.Log;
 
 /**
  * Base class for a 2d object.  Includes position, scale, rotation, and flat-shaded color.
  */
 public class Sprite2d {
-    private static final String TAG = GlUtil.TAG;
+    private static final String TAG = "Sprite2d";
 
     private Drawable2d mDrawable;
     private float mColor[];

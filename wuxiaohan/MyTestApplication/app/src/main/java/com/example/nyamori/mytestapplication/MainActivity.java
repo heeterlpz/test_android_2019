@@ -13,10 +13,12 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.media.Image;
 import android.media.ImageReader;
+import android.opengl.GLES20;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
@@ -26,7 +28,14 @@ import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 import android.view.TextureView;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import com.example.nyamori.gles.EglCore;
+import com.example.nyamori.gles.FullFrameRect;
+import com.example.nyamori.gles.OffscreenSurface;
+import com.example.nyamori.gles.Texture2dProgram;
+import com.example.nyamori.gles.WindowSurface;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -34,6 +43,13 @@ import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
     private final static String TAG = "MainActivity";
+
+    private static final int MSG_UPDATE_IMG = 0;
+    private static final int MSG_INIT_OUT = 1;
+
+    private static final int UI_UPDATE_FPS_OPENGL = 10;
+    private static final int UI_UPDATE_FPS_IMAGE = 11;
+
     private TextureView mTextureView;
     private TextureView textureViewAfterEdit;
     private TextureView.SurfaceTextureListener mSurfaceTextureListener;
@@ -45,8 +61,24 @@ public class MainActivity extends AppCompatActivity {
     private Handler mHandler;
     private CaptureRequest.Builder mPreviewBuilder;
     private ImageReader imageReader;
-    private Surface mSurface;
     private DrawSurface drawSurface;
+
+    private TextView withImageReader;
+    private TextView withOpenGL;
+
+    private EglCore mEglCore;
+    private SurfaceTexture mSurfaceTexture;
+    private OffscreenSurface mOffscreenSurface;
+    private WindowSurface mWindowSurface;
+    private FullFrameRect mFullFrameRect;
+    private float[] mTempMatrix=new float[16];
+    private Surface mOutSurface;
+    private int mTextureID=-1;
+    private Handler mOpenGLHandler;
+    private Handler mUIHandler;
+
+    private int fpsCount;
+    private long fpsTime;
 
     // TODO: 19-8-2 整理mainActivity结构
     @Override
@@ -59,6 +91,11 @@ public class MainActivity extends AppCompatActivity {
             actionBar.hide();
         }
 
+        Log.d(TAG, "onCreate: new EglCore");
+        mEglCore=new EglCore(null,EglCore.FLAG_RECORDABLE);
+
+        withImageReader=(TextView)findViewById(R.id.with_image_reader);
+        withOpenGL=(TextView)findViewById(R.id.with_OpenGL);
 
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -91,10 +128,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
                 Log.d(TAG, "onSurfaceTextureAvailable: use available");
-                SurfaceTexture surfaceTexture=textureViewAfterEdit.getSurfaceTexture();
-                surfaceTexture.setDefaultBufferSize(width,height);
-                mSurface=new Surface(surfaceTexture);
-                drawSurface=new DrawSurface(width,height,mSurface,getApplicationContext());
+                Surface mSurface=new Surface(surface);
+                drawSurface=new DrawSurface(width,height,mSurface,mUIHandler,getApplicationContext());
             }
 
             @Override
@@ -128,14 +163,67 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initSurfaceView() {
+        HandlerThread handlerThread = new HandlerThread("OpenglCamera");
+        handlerThread.start();
+        mOpenGLHandler = new Handler(handlerThread.getLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                switch (msg.what) {
+                    case MSG_UPDATE_IMG:
+                        mOffscreenSurface.makeCurrent();
+                        mSurfaceTexture.updateTexImage();
+                        mSurfaceTexture.getTransformMatrix(mTempMatrix);
+
+                        mWindowSurface.makeCurrent();
+                        GLES20.glViewport(0,0,mPreviewSize.getWidth(),mPreviewSize.getHeight());
+                        mFullFrameRect.drawFrame(mTextureID,mTempMatrix);
+                        mWindowSurface.swapBuffers();
+                        fpsCount++;
+                        long nowTime=System.currentTimeMillis();
+                        if((nowTime-fpsTime)>999){
+                            mUIHandler.obtainMessage(UI_UPDATE_FPS_OPENGL,fpsCount,0).sendToTarget();
+                            fpsTime=nowTime;
+                            fpsCount=0;
+                        }
+                        break;
+                    case MSG_INIT_OUT:
+                        mOffscreenSurface=new OffscreenSurface(mEglCore,mPreviewSize.getWidth(),mPreviewSize.getHeight());
+                        mOffscreenSurface.makeCurrent();
+                        mFullFrameRect=new FullFrameRect(new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT_BW));
+                        mTextureID=mFullFrameRect.createTextureObject();
+                        mSurfaceTexture.detachFromGLContext();
+                        mSurfaceTexture.attachToGLContext(mTextureID);
+                        mWindowSurface=new WindowSurface(mEglCore,mOutSurface,false);
+                        fpsCount=0;
+                        fpsTime=System.currentTimeMillis();
+                        initCamera(1280,720);
+                        openCamera();
+                        break;
+                }
+            }
+        };
+
+        mUIHandler=new Handler(){
+            @Override
+            public void handleMessage(Message msg) {
+                switch (msg.what) {
+                    case UI_UPDATE_FPS_OPENGL:
+                        withOpenGL.setText("withOpenGL-FPS:"+msg.arg1);
+                        break;
+                    case UI_UPDATE_FPS_IMAGE:
+                        withImageReader.setText("withOpenGL-FPS:"+msg.arg1);
+                }
+            }
+        };
         textureViewAfterEdit=(TextureView)findViewById(R.id.texture_view_after_edit);
         mTextureView = (TextureView) findViewById(R.id.m_texture_view);
         mSurfaceTextureListener=new TextureView.SurfaceTextureListener() {
             @Override
             public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-                initCamera(width,height);
-                Log.d(TAG, "onSurfaceTextureAvailable: 初始化成功");
-                openCamera();
+                Log.d(TAG, "onSurfaceTextureAvailable: 开始初始化");
+                mOutSurface=new Surface(surface);
+                mPreviewSize=new Size(width,height);
+                mOpenGLHandler.obtainMessage(MSG_INIT_OUT).sendToTarget();
             }
 
             @Override
@@ -153,6 +241,13 @@ public class MainActivity extends AppCompatActivity {
 
             }
         };
+        mSurfaceTexture=new SurfaceTexture(-1);
+        mSurfaceTexture.setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
+            @Override
+            public void onFrameAvailable(SurfaceTexture surfaceTexture) {
+                mOpenGLHandler.obtainMessage(MSG_UPDATE_IMG).sendToTarget();
+            }
+        });
     }
 
     private void openCamera() {
@@ -187,14 +282,11 @@ public class MainActivity extends AppCompatActivity {
 
     private void initCamera(int width, int height) {
         // TODO: 19-7-31 专门写个size相关的初始化函数
-        mPreviewSize=new Size(width,height);
         mCameraManager = (CameraManager) getApplicationContext().getSystemService(CAMERA_SERVICE);
         try{
             for (String cameraID:mCameraManager.getCameraIdList()){
                 CameraCharacteristics cameraCharacteristics=mCameraManager.getCameraCharacteristics(cameraID);
                 Integer facing=cameraCharacteristics.get(CameraCharacteristics.LENS_FACING);
-                Log.d(TAG, "initCamera: facing="+facing);
-                Log.d(TAG, "initCamera: cameraID="+cameraID);
                 if(facing!=null&&facing==CameraCharacteristics.LENS_FACING_FRONT)continue;
                 this.cameraID=cameraID;
                 //获取相机角度
@@ -255,13 +347,10 @@ public class MainActivity extends AppCompatActivity {
     };
 
     public void takePreview() throws CameraAccessException {
-        SurfaceTexture surfaceTexture=mTextureView.getSurfaceTexture();
-        surfaceTexture.setDefaultBufferSize(mPreviewSize.getWidth(),mPreviewSize.getHeight());
-        Surface previewSurface=new Surface(surfaceTexture);
         mPreviewBuilder = mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-        mPreviewBuilder.addTarget(previewSurface);
+        mPreviewBuilder.addTarget(new Surface(mSurfaceTexture));
         mPreviewBuilder.addTarget(imageReader.getSurface());
-        mCamera.createCaptureSession(Arrays.asList(previewSurface,imageReader.getSurface()), mSessionPreviewStateCallback, mHandler);
+        mCamera.createCaptureSession(Arrays.asList(new Surface(mSurfaceTexture),imageReader.getSurface()), mSessionPreviewStateCallback, mHandler);
     }
 
     private CameraCaptureSession.StateCallback mSessionPreviewStateCallback = new CameraCaptureSession.StateCallback() {
@@ -273,8 +362,6 @@ public class MainActivity extends AppCompatActivity {
             try {
                 //自动对焦
                 mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                //打开闪光灯
-                mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
                 //无限次的重复获取图像
                 mSession.setRepeatingRequest(mPreviewBuilder.build(), null, mHandler);
             } catch (CameraAccessException e) {

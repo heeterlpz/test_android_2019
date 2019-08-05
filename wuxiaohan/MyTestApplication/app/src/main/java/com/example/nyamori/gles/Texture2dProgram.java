@@ -16,6 +16,7 @@
 
 package com.example.nyamori.gles;
 
+import android.opengl.GLES11;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.util.Log;
@@ -29,7 +30,7 @@ public class Texture2dProgram {
     private static final String TAG = GlUtil.TAG;
 
     public enum ProgramType {
-        TEXTURE_2D, TEXTURE_EXT, TEXTURE_EXT_BW, TEXTURE_EXT_FILT
+        TEXTURE_2D, TEXTURE_EXT, TEXTURE_EXT_BW, TEXTURE_EXT_FILT, TEXTURE_DIV_UD, TEXTURE_SPLIT, TEXTURE_MOSAIC, TEXTURE_SMOOTH
     }
 
     // Simple vertex shader, used for all programs.
@@ -62,6 +63,103 @@ public class Texture2dProgram {
             "uniform samplerExternalOES sTexture;\n" +
             "void main() {\n" +
             "    gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
+            "}\n";
+
+    private static final String FRAGMENT_SHADER_EXT_HP =
+            "#extension GL_OES_EGL_image_external : require\n" +
+            "precision highp float;\n" +
+            "varying vec2 vTextureCoord;\n" +
+            "uniform samplerExternalOES sTexture;\n" +
+            "void main() {\n" +
+            "    gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
+            "}\n";
+
+    private static final String FRAGMENT_DIV_UD =
+            "#extension GL_OES_EGL_image_external : require\n" +
+            "precision mediump float;\n" +
+            "varying vec2 vTextureCoord;\n" +
+            "uniform samplerExternalOES sTexture;\n" +
+            "void main() {\n" +
+            "    vec2 uv = vTextureCoord;\n" +
+            "    if (uv.y < 0.5) {\n" +
+            "        uv.y = 1.0 - uv.y;\n" +
+            "    }\n" +
+            "    if (uv.x > 0.5) {\n" +
+            "       uv.x = 1.0 - uv.x;\n" +
+            "    }\n" +
+            "    gl_FragColor = texture2D(sTexture, fract(uv));\n" +
+            "}\n";
+
+    private static final String FRAGMENT_SPLIT =
+            "#extension GL_OES_EGL_image_external : require\n" +
+            "precision mediump float;\n" +
+            "varying vec2 vTextureCoord;\n" +
+            "uniform samplerExternalOES sTexture;\n" +
+            "void main() {\n" +
+            "    vec2 uv = vTextureCoord;\n" +
+            "    if (uv.x < 1.0 / 3.0) {\n" +
+            "        uv.x = uv.x * 3.0;\n" +
+            "    } else if (uv.x < 2.0 / 3.0) {\n" +
+            "        uv.x = (uv.x - 1.0 / 3.0) * 3.0;\n" +
+            "    } else {\n" +
+            "        uv.x = (uv.x - 2.0 / 3.0) * 3.0;\n" +
+            "    }\n" +
+            "    if (uv.y <= 1.0 / 3.0) {\n" +
+            "        uv.y = uv.y * 3.0;\n" +
+            "    } else if (uv.y < 2.0 / 3.0) {\n" +
+            "        uv.y = (uv.y - 1.0 / 3.0) * 3.0;\n" +
+            "    } else {\n" +
+            "        uv.y = (uv.y - 2.0 / 3.0) * 3.0;\n" +
+            "    }\n" +
+            "    gl_FragColor = texture2D(sTexture, uv);\n" +
+            "}\n";
+
+    private static final String FRAGMENT_MOSAIC =
+            "#extension GL_OES_EGL_image_external : require\n" +
+            "precision mediump float;\n" +
+            "varying vec2 vTextureCoord;\n" +
+            "uniform samplerExternalOES sTexture;\n" +
+            "void main() {\n" +
+            "    vec2 uv  = vTextureCoord.xy;\n" +
+            "    float dx = 0.02;\n" +
+            "    float dy = 0.02;\n" +
+            "    vec2 coord = vec2(dx * floor(uv.x / dx), dy * floor(uv.y / dy));\n" +
+            "    vec3 tc = texture2D(sTexture, coord).xyz;\n" +
+            "    gl_FragColor = vec4(tc, 1.0);\n" +
+            "}\n";
+
+    private static final String FRAGMENT_SMOOTH =
+            "#extension GL_OES_EGL_image_external : require\n" +
+            "precision mediump float;\n" +
+            "varying vec2 vTextureCoord;\n" +
+            "uniform samplerExternalOES sTexture;\n" +
+            "void main() {\n" +
+            "    //给出卷积内核中各个元素对应像素相对于待处理像素的纹理坐标偏移量 3*3内核\n" +
+            "    vec2 offset0=vec2(-1.0,-1.0); vec2 offset1=vec2(0.0,-1.0); vec2 offset2=vec2(1.0,-1.0);\n" +
+            "    vec2 offset3=vec2(-1.0,0.0); vec2 offset4=vec2(0.0,0.0); vec2 offset5=vec2(1.0,0.0);\n" +
+            "    vec2 offset6=vec2(-1.0,1.0); vec2 offset7=vec2(0.0,1.0); vec2 offset8=vec2(1.0,1.0);\n" +
+            "    const float scaleFactor=1.0/9.0;//给出最终求和时的加权因子(调整亮度)\n" +
+            "    //卷积内核中各个位置的值\n" +
+            "    float kernelValue0 = 1.0; float kernelValue1 = 1.0; float kernelValue2 = 1.0;\n" +
+            "    float kernelValue3 = 1.0; float kernelValue4 = 1.0; float kernelValue5 = 1.0;\n" +
+            "    float kernelValue6 = 1.0; float kernelValue7 = 1.0; float kernelValue8 = 1.0;\n" +
+            "    vec4 sum;//最终的颜色和\n" +
+            "    //获取卷积内核中各个元素对应像素的颜色值\n" +
+            "    vec4 cTemp0,cTemp1,cTemp2,cTemp3,cTemp4,cTemp5,cTemp6,cTemp7,cTemp8;\n" +
+            "    cTemp0=texture2D(sTexture, vTextureCoord.st + offset0.xy/512.0);\n" +
+            "    cTemp1=texture2D(sTexture, vTextureCoord.st + offset1.xy/512.0);\n" +
+            "    cTemp2=texture2D(sTexture, vTextureCoord.st + offset2.xy/512.0);\n" +
+            "    cTemp3=texture2D(sTexture, vTextureCoord.st + offset3.xy/512.0);\n" +
+            "    cTemp4=texture2D(sTexture, vTextureCoord.st + offset4.xy/512.0);\n" +
+            "    cTemp5=texture2D(sTexture, vTextureCoord.st + offset5.xy/512.0);\n" +
+            "    cTemp6=texture2D(sTexture, vTextureCoord.st + offset6.xy/512.0);\n" +
+            "    cTemp7=texture2D(sTexture, vTextureCoord.st + offset7.xy/512.0);\n" +
+            "    cTemp8=texture2D(sTexture, vTextureCoord.st + offset8.xy/512.0);\n" +
+            "    //颜色求和\n" +
+            "    sum =kernelValue0*cTemp0+kernelValue1*cTemp1+kernelValue2*cTemp2+\n" +
+            "    kernelValue3*cTemp3+kernelValue4*cTemp4+kernelValue5*cTemp5+\n" +
+            "    kernelValue6*cTemp6+kernelValue7*cTemp7+kernelValue8*cTemp8;\n" +
+            "    gl_FragColor=sum*scaleFactor;//进行亮度加权后将最终颜色传递给管线\n" +
             "}\n";
 
     // Fragment shader that converts color to black & white with a simple transformation.
@@ -131,7 +229,6 @@ public class Texture2dProgram {
     private float[] mTexOffset;
     private float mColorAdjust;
 
-
     /**
      * Prepares the program in the current EGL context.
      */
@@ -147,6 +244,22 @@ public class Texture2dProgram {
                 mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
                 mProgramHandle = GlUtil.createProgram(VERTEX_SHADER, FRAGMENT_SHADER_EXT);
                 break;
+            case TEXTURE_DIV_UD:
+                mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
+                mProgramHandle = GlUtil.createProgram(VERTEX_SHADER, FRAGMENT_DIV_UD);
+                break;
+            case TEXTURE_SPLIT:
+                mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
+                mProgramHandle = GlUtil.createProgram(VERTEX_SHADER, FRAGMENT_SPLIT);
+                break;
+            case TEXTURE_MOSAIC:
+                mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
+                mProgramHandle = GlUtil.createProgram(VERTEX_SHADER, FRAGMENT_MOSAIC);
+                break;
+            case TEXTURE_SMOOTH:
+                mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
+                mProgramHandle = GlUtil.createProgram(VERTEX_SHADER, FRAGMENT_SMOOTH);
+                break;
             case TEXTURE_EXT_BW:
                 mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
                 mProgramHandle = GlUtil.createProgram(VERTEX_SHADER, FRAGMENT_SHADER_EXT_BW);
@@ -161,7 +274,6 @@ public class Texture2dProgram {
         if (mProgramHandle == 0) {
             throw new RuntimeException("Unable to create program");
         }
-        Log.d(TAG, "Created program " + mProgramHandle + " (" + programType + ")");
 
         // get locations of attributes and uniforms
 
@@ -199,7 +311,6 @@ public class Texture2dProgram {
      * the program).
      */
     public void release() {
-        Log.d(TAG, "deleting program " + mProgramHandle);
         GLES20.glDeleteProgram(mProgramHandle);
         mProgramHandle = -1;
     }
