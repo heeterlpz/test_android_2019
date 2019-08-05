@@ -1,12 +1,10 @@
 package com.example.nyamori.mytestapplication;
 
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.graphics.ImageFormat;
-import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
+import android.graphics.YuvImage;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -15,28 +13,27 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.media.Image;
 import android.media.ImageReader;
+import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
-import android.view.SurfaceHolder;
 import android.view.TextureView;
-import android.view.View;
-import android.widget.Button;
 import android.widget.Toast;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+
 public class MainActivity extends AppCompatActivity {
     private final static String TAG = "MainActivity";
-    private Button takePicture;
     private TextureView mTextureView;
     private TextureView textureViewAfterEdit;
     private TextureView.SurfaceTextureListener mSurfaceTextureListener;
@@ -48,47 +45,86 @@ public class MainActivity extends AppCompatActivity {
     private Handler mHandler;
     private CaptureRequest.Builder mPreviewBuilder;
     private ImageReader imageReader;
-    private android.graphics.Canvas canvas;
+    private Surface mSurface;
+    private DrawSurface drawSurface;
 
+    // TODO: 19-8-2 整理mainActivity结构
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(MainActivity.this, new String[]{"android.permission.CAMERA"}, 1);
-        }
 
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.hide();
         }
 
-        initSurfaceView();
 
-        takePicture = (Button) findViewById(R.id.take_picture);
-        takePicture.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                takePicture();
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{"android.permission.CAMERA"}, 1);
+        }else {
+            initSurfaceView();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if(requestCode==1){
+            for(int i=0;i<permissions.length;i++){
+                if(grantResults[i]==PackageManager.PERMISSION_GRANTED){
+                    initSurfaceView();
+                }
             }
-        });
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        Log.d(TAG, "onResume: start");
+        if(drawSurface!=null
+                &&drawSurface.isPause()==true)drawSurface.startThread();
         mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
+        textureViewAfterEdit.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+            @Override
+            public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+                Log.d(TAG, "onSurfaceTextureAvailable: use available");
+                SurfaceTexture surfaceTexture=textureViewAfterEdit.getSurfaceTexture();
+                surfaceTexture.setDefaultBufferSize(width,height);
+                mSurface=new Surface(surfaceTexture);
+                drawSurface=new DrawSurface(width,height,mSurface,getApplicationContext());
+            }
+
+            @Override
+            public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+                Log.d(TAG, "onSurfaceTextureAvailable: use size changed");
+            }
+
+            @Override
+            public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+                Log.d(TAG, "onSurfaceTextureAvailable: use destroyed");
+                return false;
+            }
+
+            @Override
+            public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+                Log.d(TAG, "onSurfaceTextureAvailable: use update");
+            }
+        });
+    }
+
+    @Override
+    protected void onPause() {
+        if(drawSurface.isPause()==false)drawSurface.pauseThread();
+        super.onPause();
     }
 
     @Override
     protected void onDestroy() {
         destroyCamera();
         super.onDestroy();
-    }
-
-    private void takePicture() {
     }
 
     private void initSurfaceView() {
@@ -139,6 +175,14 @@ public class MainActivity extends AppCompatActivity {
             mCamera.close();
             mCamera=null;
         }
+        if(imageReader!=null){
+            imageReader.close();
+            imageReader=null;
+        }
+        if(drawSurface!=null){
+            drawSurface.closeThread();
+            drawSurface=null;
+        }
     }
 
     private void initCamera(int width, int height) {
@@ -151,9 +195,10 @@ public class MainActivity extends AppCompatActivity {
                 Integer facing=cameraCharacteristics.get(CameraCharacteristics.LENS_FACING);
                 Log.d(TAG, "initCamera: facing="+facing);
                 Log.d(TAG, "initCamera: cameraID="+cameraID);
-                if(facing==null||!facing.equals(CameraCharacteristics.LENS_FACING_FRONT))continue;
-                this.cameraID=facing.toString();
-                //在这里可以获取相机的特性
+                if(facing!=null&&facing==CameraCharacteristics.LENS_FACING_FRONT)continue;
+                this.cameraID=cameraID;
+                //获取相机角度
+
                 initImageReader();
             }
         } catch (CameraAccessException e) {
@@ -162,8 +207,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initImageReader() {
-        imageReader=ImageReader.newInstance(mPreviewSize.getWidth(),mPreviewSize.getHeight(), ImageFormat.YUV_420_888,5);
+        imageReader=ImageReader.newInstance(mPreviewSize.getWidth(),mPreviewSize.getHeight(),
+                ImageFormat.YUV_420_888,2); //设置的格式为yuv420，其实可以直接设置为nv21
         imageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
+            @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void onImageAvailable(ImageReader reader) {
                 //获得相机数据YUV420
@@ -172,9 +219,10 @@ public class MainActivity extends AppCompatActivity {
                     Log.e(TAG, "onImageAvailable .............mImage == null");
                     return;
                 }
-                Log.d(TAG, "onImageAvailable: image="+mImage.toString());
-                // TODO: 19-7-31 将获取的数据输出到TextureView
-
+                if(drawSurface!=null) {
+                    YuvImage yuv=new YuvImage(getDataFromImage(mImage),ImageFormat.NV21,mImage.getWidth(),mImage.getHeight(),null);
+                    drawSurface.putNV21Data(yuv);
+                }
                 mImage.close();
             }
         },mHandler);
@@ -239,5 +287,61 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(MainActivity.this, "配置失败", Toast.LENGTH_SHORT).show();
         }
     };
+
+    //解析yuv420数据为nv21
+    private static byte[] getDataFromImage(Image image) {
+        Rect crop = image.getCropRect();
+        int format = image.getFormat();
+        int width = crop.width();
+        int height = crop.height();
+        Image.Plane[] planes = image.getPlanes();
+        byte[] data = new byte[width * height * ImageFormat.getBitsPerPixel(format) / 8];
+        byte[] rowData = new byte[planes[0].getRowStride()];
+        int channelOffset = 0;
+        int outputStride = 1;
+        for (int i = 0; i < planes.length; i++) {
+            switch (i) {
+                case 0:
+                    channelOffset = 0;
+                    outputStride = 1;
+                    break;
+                case 1:
+                    channelOffset = width * height + 1;
+                    outputStride = 2;
+                    break;
+                case 2:
+                    channelOffset = width * height;
+                    outputStride = 2;
+                    break;
+            }
+            ByteBuffer buffer = planes[i].getBuffer();
+            int rowStride = planes[i].getRowStride();
+            int pixelStride = planes[i].getPixelStride();
+
+            int shift = (i == 0) ? 0 : 1;
+            int w = width >> shift;
+            int h = height >> shift;
+            buffer.position(rowStride * (crop.top >> shift) + pixelStride * (crop.left >> shift));
+            for (int row = 0; row < h; row++) {
+                int length;
+                if (pixelStride == 1 && outputStride == 1) {
+                    length = w;
+                    buffer.get(data, channelOffset, length);
+                    channelOffset += length;
+                } else {
+                    length = (w - 1) * pixelStride + 1;
+                    buffer.get(rowData, 0, length);
+                    for (int col = 0; col < w; col++) {
+                        data[channelOffset] = rowData[col * pixelStride];
+                        channelOffset += outputStride;
+                    }
+                }
+                if (row < h - 1) {
+                    buffer.position(buffer.position() + rowStride - length);
+                }
+            }
+        }
+        return data;
+    }
 }
 
