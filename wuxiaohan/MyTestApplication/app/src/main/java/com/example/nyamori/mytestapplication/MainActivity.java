@@ -11,6 +11,7 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.opengl.GLES20;
@@ -38,7 +39,11 @@ import com.example.nyamori.gles.Texture2dProgram;
 import com.example.nyamori.gles.WindowSurface;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -48,22 +53,17 @@ public class MainActivity extends AppCompatActivity {
     private static final int MSG_INIT_OUT = 1;
 
     private static final int UI_UPDATE_FPS_OPENGL = 10;
-    private static final int UI_UPDATE_FPS_IMAGE = 11;
 
     private TextureView mTextureView;
-    private TextureView textureViewAfterEdit;
     private TextureView.SurfaceTextureListener mSurfaceTextureListener;
     private Size mPreviewSize;
+    private Size mSurfaceSize;
     private CameraManager mCameraManager;
     private String cameraID;
     private CameraDevice mCamera;
     private CameraCaptureSession mSession;
     private Handler mHandler;
     private CaptureRequest.Builder mPreviewBuilder;
-    private ImageReader imageReader;
-    private DrawSurface drawSurface;
-
-    private TextView withImageReader;
     private TextView withOpenGL;
 
     private EglCore mEglCore;
@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
     private int fpsCount;
     private long fpsTime;
 
-    // TODO: 19-8-2 整理mainActivity结构
+    // TODO: 19-8-5 把camera操作全部移交到别的类 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -91,16 +91,14 @@ public class MainActivity extends AppCompatActivity {
             actionBar.hide();
         }
 
-        Log.d(TAG, "onCreate: new EglCore");
-        mEglCore=new EglCore(null,EglCore.FLAG_RECORDABLE);
-
-        withImageReader=(TextView)findViewById(R.id.with_image_reader);
-        withOpenGL=(TextView)findViewById(R.id.with_OpenGL);
-
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(MainActivity.this, new String[]{"android.permission.CAMERA"}, 1);
         }else {
+            mEglCore=new EglCore(null,EglCore.FLAG_RECORDABLE);
+            
+            withOpenGL=(TextView)findViewById(R.id.with_OpenGL);
+
             initSurfaceView();
         }
     }
@@ -120,39 +118,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d(TAG, "onResume: start");
-        if(drawSurface!=null
-                &&drawSurface.isPause()==true)drawSurface.startThread();
         mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
-        textureViewAfterEdit.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
-            @Override
-            public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-                Log.d(TAG, "onSurfaceTextureAvailable: use available");
-                Surface mSurface=new Surface(surface);
-                drawSurface=new DrawSurface(width,height,mSurface,mUIHandler,getApplicationContext());
-            }
-
-            @Override
-            public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-                Log.d(TAG, "onSurfaceTextureAvailable: use size changed");
-            }
-
-            @Override
-            public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-                Log.d(TAG, "onSurfaceTextureAvailable: use destroyed");
-                return false;
-            }
-
-            @Override
-            public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-                Log.d(TAG, "onSurfaceTextureAvailable: use update");
-            }
-        });
     }
 
     @Override
     protected void onPause() {
-        if(drawSurface.isPause()==false)drawSurface.pauseThread();
         super.onPause();
     }
 
@@ -163,7 +133,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initSurfaceView() {
-        HandlerThread handlerThread = new HandlerThread("OpenglCamera");
+        HandlerThread handlerThread = new HandlerThread("OpenGL Camera");
         handlerThread.start();
         mOpenGLHandler = new Handler(handlerThread.getLooper()) {
             @Override
@@ -175,7 +145,9 @@ public class MainActivity extends AppCompatActivity {
                         mSurfaceTexture.getTransformMatrix(mTempMatrix);
 
                         mWindowSurface.makeCurrent();
-                        GLES20.glViewport(0,0,mPreviewSize.getWidth(),mPreviewSize.getHeight());
+                        int xStart=(mSurfaceSize.getWidth()-mPreviewSize.getHeight())/2;
+                        int yStart=mSurfaceSize.getHeight()-mPreviewSize.getWidth();
+                        GLES20.glViewport(xStart,yStart,mPreviewSize.getHeight(),mPreviewSize.getWidth());
                         mFullFrameRect.drawFrame(mTextureID,mTempMatrix);
                         mWindowSurface.swapBuffers();
                         fpsCount++;
@@ -187,6 +159,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                         break;
                     case MSG_INIT_OUT:
+                        initCamera(mSurfaceSize.getWidth(),mSurfaceSize.getHeight());
                         mOffscreenSurface=new OffscreenSurface(mEglCore,mPreviewSize.getWidth(),mPreviewSize.getHeight());
                         mOffscreenSurface.makeCurrent();
                         mFullFrameRect=new FullFrameRect(new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT_BW));
@@ -196,7 +169,6 @@ public class MainActivity extends AppCompatActivity {
                         mWindowSurface=new WindowSurface(mEglCore,mOutSurface,false);
                         fpsCount=0;
                         fpsTime=System.currentTimeMillis();
-                        initCamera(1280,720);
                         openCamera();
                         break;
                 }
@@ -210,19 +182,17 @@ public class MainActivity extends AppCompatActivity {
                     case UI_UPDATE_FPS_OPENGL:
                         withOpenGL.setText("withOpenGL-FPS:"+msg.arg1);
                         break;
-                    case UI_UPDATE_FPS_IMAGE:
-                        withImageReader.setText("withOpenGL-FPS:"+msg.arg1);
                 }
             }
         };
-        textureViewAfterEdit=(TextureView)findViewById(R.id.texture_view_after_edit);
         mTextureView = (TextureView) findViewById(R.id.m_texture_view);
         mSurfaceTextureListener=new TextureView.SurfaceTextureListener() {
             @Override
             public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
                 Log.d(TAG, "onSurfaceTextureAvailable: 开始初始化");
                 mOutSurface=new Surface(surface);
-                mPreviewSize=new Size(width,height);
+                mSurfaceSize=new Size(width,height);
+                Log.d(TAG, "onSurfaceTextureAvailable: size="+width+"x"+height);
                 mOpenGLHandler.obtainMessage(MSG_INIT_OUT).sendToTarget();
             }
 
@@ -251,7 +221,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void openCamera() {
-        HandlerThread handlerThread = new HandlerThread("My First Camera2");
+        HandlerThread handlerThread = new HandlerThread("My Camera2");
         handlerThread.start();
         mHandler = new Handler(handlerThread.getLooper());
         try {
@@ -270,55 +240,28 @@ public class MainActivity extends AppCompatActivity {
             mCamera.close();
             mCamera=null;
         }
-        if(imageReader!=null){
-            imageReader.close();
-            imageReader=null;
-        }
-        if(drawSurface!=null){
-            drawSurface.closeThread();
-            drawSurface=null;
-        }
     }
 
     private void initCamera(int width, int height) {
-        // TODO: 19-7-31 专门写个size相关的初始化函数
         mCameraManager = (CameraManager) getApplicationContext().getSystemService(CAMERA_SERVICE);
         try{
             for (String cameraID:mCameraManager.getCameraIdList()){
                 CameraCharacteristics cameraCharacteristics=mCameraManager.getCameraCharacteristics(cameraID);
                 Integer facing=cameraCharacteristics.get(CameraCharacteristics.LENS_FACING);
+                StreamConfigurationMap map = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
                 if(facing!=null&&facing==CameraCharacteristics.LENS_FACING_FRONT)continue;
                 this.cameraID=cameraID;
                 //获取相机角度
-
-                initImageReader();
+                Log.d(TAG, "initCamera: get size");
+                mPreviewSize=getPreferredPreviewSize(map.getOutputSizes(SurfaceTexture.class),width,height);
+                mSurfaceTexture.setDefaultBufferSize(mPreviewSize.getHeight(),mPreviewSize.getWidth());
+                Log.d(TAG, "initCamera: new size="+mPreviewSize.toString());
             }
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
     }
-
-    private void initImageReader() {
-        imageReader=ImageReader.newInstance(mPreviewSize.getWidth(),mPreviewSize.getHeight(),
-                ImageFormat.YUV_420_888,2); //设置的格式为yuv420，其实可以直接设置为nv21
-        imageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
-            @RequiresApi(api = Build.VERSION_CODES.M)
-            @Override
-            public void onImageAvailable(ImageReader reader) {
-                //获得相机数据YUV420
-                Image mImage = reader.acquireLatestImage();
-                if(mImage == null) {
-                    Log.e(TAG, "onImageAvailable .............mImage == null");
-                    return;
-                }
-                if(drawSurface!=null) {
-                    YuvImage yuv=new YuvImage(getDataFromImage(mImage),ImageFormat.NV21,mImage.getWidth(),mImage.getHeight(),null);
-                    drawSurface.putNV21Data(yuv);
-                }
-                mImage.close();
-            }
-        },mHandler);
-    }
+    
 
     private CameraDevice.StateCallback deviceStateCallback=new CameraDevice.StateCallback() {
         @Override
@@ -349,8 +292,7 @@ public class MainActivity extends AppCompatActivity {
     public void takePreview() throws CameraAccessException {
         mPreviewBuilder = mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
         mPreviewBuilder.addTarget(new Surface(mSurfaceTexture));
-        mPreviewBuilder.addTarget(imageReader.getSurface());
-        mCamera.createCaptureSession(Arrays.asList(new Surface(mSurfaceTexture),imageReader.getSurface()), mSessionPreviewStateCallback, mHandler);
+        mCamera.createCaptureSession(Arrays.asList(new Surface(mSurfaceTexture)),mSessionPreviewStateCallback, mHandler);
     }
 
     private CameraCaptureSession.StateCallback mSessionPreviewStateCallback = new CameraCaptureSession.StateCallback() {
@@ -375,60 +317,31 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    //解析yuv420数据为nv21
-    private static byte[] getDataFromImage(Image image) {
-        Rect crop = image.getCropRect();
-        int format = image.getFormat();
-        int width = crop.width();
-        int height = crop.height();
-        Image.Plane[] planes = image.getPlanes();
-        byte[] data = new byte[width * height * ImageFormat.getBitsPerPixel(format) / 8];
-        byte[] rowData = new byte[planes[0].getRowStride()];
-        int channelOffset = 0;
-        int outputStride = 1;
-        for (int i = 0; i < planes.length; i++) {
-            switch (i) {
-                case 0:
-                    channelOffset = 0;
-                    outputStride = 1;
-                    break;
-                case 1:
-                    channelOffset = width * height + 1;
-                    outputStride = 2;
-                    break;
-                case 2:
-                    channelOffset = width * height;
-                    outputStride = 2;
-                    break;
-            }
-            ByteBuffer buffer = planes[i].getBuffer();
-            int rowStride = planes[i].getRowStride();
-            int pixelStride = planes[i].getPixelStride();
-
-            int shift = (i == 0) ? 0 : 1;
-            int w = width >> shift;
-            int h = height >> shift;
-            buffer.position(rowStride * (crop.top >> shift) + pixelStride * (crop.left >> shift));
-            for (int row = 0; row < h; row++) {
-                int length;
-                if (pixelStride == 1 && outputStride == 1) {
-                    length = w;
-                    buffer.get(data, channelOffset, length);
-                    channelOffset += length;
-                } else {
-                    length = (w - 1) * pixelStride + 1;
-                    buffer.get(rowData, 0, length);
-                    for (int col = 0; col < w; col++) {
-                        data[channelOffset] = rowData[col * pixelStride];
-                        channelOffset += outputStride;
-                    }
+    private Size getPreferredPreviewSize(Size[] sizes, int width, int height) {
+        List<Size> collectorSizes = new ArrayList<>();
+        for (Size option : sizes) {
+            if (width > height) {
+                if (option.getWidth() < width || option.getHeight() < height) {
+                    collectorSizes.add(option);
+                    Log.d(TAG, "getPreferredPreviewSize:add size="+option.toString());
                 }
-                if (row < h - 1) {
-                    buffer.position(buffer.position() + rowStride - length);
+            } else {
+                if (option.getHeight() < width || option.getWidth() < height) {
+                    collectorSizes.add(option);
+                    Log.d(TAG, "getPreferredPreviewSize:add size="+option.toString());
+
                 }
             }
         }
-        return data;
+        if (collectorSizes.size() > 0) {
+            return Collections.max(collectorSizes, new Comparator<Size>() {
+                @Override
+                public int compare(Size s1, Size s2) {
+                    return Long.signum(s1.getWidth() * s1.getHeight() - s2.getWidth() * s2.getHeight());
+                }
+            });
+        }
+        return sizes[0];
     }
 }
 
