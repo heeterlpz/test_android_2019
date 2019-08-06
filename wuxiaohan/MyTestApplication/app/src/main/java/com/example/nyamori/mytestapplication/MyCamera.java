@@ -50,7 +50,7 @@ public class MyCamera {
     private OffscreenSurface mOffscreenSurface;
     private WindowSurface mWindowSurface;
     private FullFrameRect mFullFrameRect;
-    private float[] mTempMatrix=new float[16];
+    private float[] mMatrix=new float[16];
     private Surface mOutSurface;
     private Handler mOpenGLHandler;
 
@@ -116,6 +116,21 @@ public class MyCamera {
             mCamera.close();
             mCamera=null;
         }
+        if(mWindowSurface!=null){
+            mWindowSurface.release();
+        }
+        if(mOffscreenSurface!=null){
+            mOffscreenSurface.release();
+        }
+        if(mSurfaceTexture!=null){
+            mSurfaceTexture.release();
+        }
+        if(mFullFrameRect!=null){
+            mFullFrameRect.release(true);
+        }
+        if(mEglCore!=null){
+            mEglCore.release();
+        }
     }
 
     public void changeCameraType(Texture2dProgram.ProgramType programType){
@@ -128,11 +143,13 @@ public class MyCamera {
     private void initProgramTypeList() {
         programTypeList=new ArrayList<>();
         //目前支持的处理方式
-        programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_EXT);
+        programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_DIV_UD);
         programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_EXT_HP);
         programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_EXT_BW);
         programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_MOSAIC);
         programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_SMOOTH);
+        programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_EXT_FILT);
+        programTypeID=programTypeList.size()-1;
     }
 
     private void initHandler() {
@@ -160,14 +177,21 @@ public class MyCamera {
     }
 
     private void updateImg() {
+        //切换surface到offscreen surface
         mOffscreenSurface.makeCurrent();
-        mSurfaceTexture.updateTexImage();
-        mSurfaceTexture.getTransformMatrix(mTempMatrix);
 
+        mSurfaceTexture.updateTexImage();//更新了信息
+        mSurfaceTexture.getTransformMatrix(mMatrix);
+
+        //切换surface到window surface
         mWindowSurface.makeCurrent();
+
+        //设置了view的大小和起始坐标
         GLES20.glViewport(xStart,yStart,mPreviewSize.getWidth(),mPreviewSize.getHeight());
-        mFullFrameRect.drawFrame(mTextureID,mTempMatrix);
+
+        mFullFrameRect.drawFrame(mTextureID,mMatrix);
         mWindowSurface.swapBuffers();
+
         fpsCount++;
         long nowTime=System.currentTimeMillis();
         if((nowTime-fpsTime)>999){
@@ -187,11 +211,14 @@ public class MyCamera {
         openCamera();
     }
 
+
     private void setFrameRect() {
-        if(mFullFrameRect!=null){
-            mFullFrameRect.release(true);
+        Texture2dProgram texture2dProgram=new Texture2dProgram(programTypeList.get(programTypeID));
+        if(mFullFrameRect==null){
+            mFullFrameRect=new FullFrameRect(texture2dProgram);
+        }else {
+            mFullFrameRect.changeProgram(texture2dProgram);
         }
-        mFullFrameRect=new FullFrameRect(new Texture2dProgram(programTypeList.get(programTypeID)));
         mTextureID=mFullFrameRect.createTextureObject();
         mSurfaceTexture.detachFromGLContext();
         mSurfaceTexture.attachToGLContext(mTextureID);

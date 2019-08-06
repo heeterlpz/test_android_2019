@@ -36,8 +36,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mDrawerLayout=(DrawerLayout)findViewById(R.id.drawer_layout);
-        NavigationView navigationView =(NavigationView)findViewById(R.id.nav_view);
 
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
@@ -68,10 +66,10 @@ public class MainActivity extends AppCompatActivity {
                         }else {
                             switch (item.getItemId()){
                                 case R.id.nav_ext:
-                                    myCamera.changeCameraType(Texture2dProgram.ProgramType.TEXTURE_EXT);
+                                    myCamera.changeCameraType(Texture2dProgram.ProgramType.TEXTURE_EXT_HP);
                                     break;
                                 case R.id.nav_ext_hd:
-                                    myCamera.changeCameraType(Texture2dProgram.ProgramType.TEXTURE_EXT_HP);
+                                    myCamera.changeCameraType(Texture2dProgram.ProgramType.TEXTURE_DIV_UD);
                                     break;
                                 case R.id.nav_ext_bw:
                                     myCamera.changeCameraType(Texture2dProgram.ProgramType.TEXTURE_EXT_BW);
