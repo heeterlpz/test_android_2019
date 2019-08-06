@@ -50,7 +50,6 @@ public class GlUtil {
      */
     public static int createProgram(String vertexSource, String fragmentSource) {
         int[] linkStatus = new int[1];
-        Log.d(TAG, "createProgram:before 2d create");
         int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexSource);
         if (vertexShader == 0) {
             Log.d(TAG, "createProgram: vertex fail");
@@ -83,7 +82,6 @@ public class GlUtil {
      * @return A handle to the shader, or 0 on failure.
      */
     public static int loadShader(int shaderType, String source) {
-        Log.d(TAG, "loadShader: start");
         int shader = GLES20.glCreateShader(shaderType);
         checkGlError("glCreateShader type=" + shaderType);
         GLES20.glShaderSource(shader, source);

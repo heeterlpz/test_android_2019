@@ -6,18 +6,25 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.Surface;
 import android.view.TextureView;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.example.nyamori.gles.Texture2dProgram;
 
 
 public class MainActivity extends AppCompatActivity {
     private final static String TAG = "MainActivity";
 
+    private DrawerLayout mDrawerLayout;
     private TextureView mTextureView;
     private TextureView.SurfaceTextureListener mSurfaceTextureListener;
     private TextView withOpenGL;
@@ -29,6 +36,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mDrawerLayout=(DrawerLayout)findViewById(R.id.drawer_layout);
+        NavigationView navigationView =(NavigationView)findViewById(R.id.nav_view);
 
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
@@ -39,9 +48,49 @@ public class MainActivity extends AppCompatActivity {
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(MainActivity.this, new String[]{"android.permission.CAMERA"}, 1);
         }else {
+            initDrawer();
+
             withOpenGL=(TextView)findViewById(R.id.with_OpenGL);
             initSurfaceView();
         }
+    }
+
+    private void initDrawer() {
+        mDrawerLayout=(DrawerLayout)findViewById(R.id.drawer_layout);
+        NavigationView navigationView =(NavigationView)findViewById(R.id.nav_view);
+        navigationView.setCheckedItem(R.id.nav_ext);
+        navigationView.setNavigationItemSelectedListener(
+                new NavigationView.OnNavigationItemSelectedListener() {
+                    @Override
+                    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                        if(myCamera==null){
+                            Toast.makeText(MainActivity.this,"尚未初始化",Toast.LENGTH_SHORT).show();
+                        }else {
+                            switch (item.getItemId()){
+                                case R.id.nav_ext:
+                                    myCamera.changeCameraType(Texture2dProgram.ProgramType.TEXTURE_EXT);
+                                    break;
+                                case R.id.nav_ext_hd:
+                                    myCamera.changeCameraType(Texture2dProgram.ProgramType.TEXTURE_EXT_HP);
+                                    break;
+                                case R.id.nav_ext_bw:
+                                    myCamera.changeCameraType(Texture2dProgram.ProgramType.TEXTURE_EXT_BW);
+                                    break;
+                                case R.id.nav_mosaic:
+                                    myCamera.changeCameraType(Texture2dProgram.ProgramType.TEXTURE_MOSAIC);
+                                    break;
+                                case R.id.nav_smooth:
+                                    myCamera.changeCameraType(Texture2dProgram.ProgramType.TEXTURE_SMOOTH);
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                        mDrawerLayout.closeDrawers();
+                        return true;
+                    }
+                }
+        );
     }
 
     @Override

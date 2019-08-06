@@ -52,17 +52,20 @@ public class MyCamera {
     private FullFrameRect mFullFrameRect;
     private float[] mTempMatrix=new float[16];
     private Surface mOutSurface;
-    private int mTextureID=-1;
     private Handler mOpenGLHandler;
 
     private int fpsCount;
     private long fpsTime;
 
+    private int mTextureID=-1;
     private int xStart=0;
     private int yStart=0;
 
     private Handler mUIHandler;
     private Context mContext;
+
+    private int programTypeID=0;
+    private List<Texture2dProgram.ProgramType> programTypeList;
 
     public MyCamera(Handler mUIHandler,Surface mOutSurface,Context context){
         this.mUIHandler=mUIHandler;
@@ -77,6 +80,7 @@ public class MyCamera {
                 mOpenGLHandler.obtainMessage(MsgConfig.OPenGLMsg.MSG_UPDATE_IMG).sendToTarget();
             }
         });
+        initProgramTypeList();
         initHandler();
     }
 
@@ -114,6 +118,23 @@ public class MyCamera {
         }
     }
 
+    public void changeCameraType(Texture2dProgram.ProgramType programType){
+        if(programTypeList.contains(programType)){
+            programTypeID=programTypeList.indexOf(programType);
+            mOpenGLHandler.obtainMessage(MsgConfig.OPenGLMsg.MSG_CHANGE_TYPE).sendToTarget();
+        }
+    }
+
+    private void initProgramTypeList() {
+        programTypeList=new ArrayList<>();
+        //目前支持的处理方式
+        programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_EXT);
+        programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_EXT_HP);
+        programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_EXT_BW);
+        programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_MOSAIC);
+        programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_SMOOTH);
+    }
+
     private void initHandler() {
         HandlerThread handlerThreadCamera = new HandlerThread("Camera");
         handlerThreadCamera.start();
@@ -129,6 +150,9 @@ public class MyCamera {
                         break;
                     case MsgConfig.OPenGLMsg.MSG_UPDATE_IMG:
                         updateImg();
+                        break;
+                    case MsgConfig.OPenGLMsg.MSG_CHANGE_TYPE:
+                        setFrameRect();
                         break;
                 }
             }
@@ -156,15 +180,23 @@ public class MyCamera {
     private void initOpenGL() {
         mOffscreenSurface=new OffscreenSurface(mEglCore,mPreviewSize.getHeight(),mPreviewSize.getWidth());
         mOffscreenSurface.makeCurrent();
-        mFullFrameRect=new FullFrameRect(new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT_BW));
-        mTextureID=mFullFrameRect.createTextureObject();
-        mSurfaceTexture.detachFromGLContext();
-        mSurfaceTexture.attachToGLContext(mTextureID);
+        setFrameRect();
         mWindowSurface=new WindowSurface(mEglCore,mOutSurface,false);
         fpsCount=0;
         fpsTime=System.currentTimeMillis();
         openCamera();
     }
+
+    private void setFrameRect() {
+        if(mFullFrameRect!=null){
+            mFullFrameRect.release(true);
+        }
+        mFullFrameRect=new FullFrameRect(new Texture2dProgram(programTypeList.get(programTypeID)));
+        mTextureID=mFullFrameRect.createTextureObject();
+        mSurfaceTexture.detachFromGLContext();
+        mSurfaceTexture.attachToGLContext(mTextureID);
+    }
+
 
     private void openCamera() {
         try {

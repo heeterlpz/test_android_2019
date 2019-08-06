@@ -25,12 +25,21 @@ import java.nio.FloatBuffer;
 
 /**
  * GL program and supporting functions for textured 2D shapes.
+ * 这个类是真正的2D绘图类，目前调用他的是FullFrameRect类
  */
 public class Texture2dProgram {
     private static final String TAG = GlUtil.TAG;
 
     public enum ProgramType {
-        TEXTURE_2D, TEXTURE_EXT, TEXTURE_EXT_BW, TEXTURE_EXT_FILT, TEXTURE_DIV_UD, TEXTURE_SPLIT, TEXTURE_MOSAIC, TEXTURE_SMOOTH
+        TEXTURE_2D, //不使用的类型
+        TEXTURE_EXT,//原图片
+        TEXTURE_EXT_HP,//高清版
+        TEXTURE_EXT_BW,//黑白滤镜
+        TEXTURE_EXT_FILT,//切割-切成两个三角形
+        TEXTURE_DIV_UD,//切割-镜像处理
+        TEXTURE_SPLIT,//切割-九宫图
+        TEXTURE_MOSAIC,//马赛克
+        TEXTURE_SMOOTH //模糊
     }
 
     // Simple vertex shader, used for all programs.
@@ -46,6 +55,8 @@ public class Texture2dProgram {
             "}\n";
 
     // Simple fragment shader for use with "normal" 2D textures.
+    //相机的texture必须为samplerExternalOES 而sampler2D是二维纹理
+    //这个在相机中无法使用，想显示原图片使用FRAGMENT_SHADER_EXT
     private static final String FRAGMENT_SHADER_2D =
             "precision mediump float;\n" +
             "varying vec2 vTextureCoord;\n" +
@@ -237,6 +248,7 @@ public class Texture2dProgram {
 
         switch (programType) {
             case TEXTURE_2D:
+                Log.e(TAG, "Texture2dProgram: wrong program type");
                 mTextureTarget = GLES20.GL_TEXTURE_2D;
                 mProgramHandle = GlUtil.createProgram(VERTEX_SHADER, FRAGMENT_SHADER_2D);
                 break;
@@ -267,6 +279,10 @@ public class Texture2dProgram {
             case TEXTURE_EXT_FILT:
                 mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
                 mProgramHandle = GlUtil.createProgram(VERTEX_SHADER, FRAGMENT_SHADER_EXT_FILT);
+                break;
+            case TEXTURE_EXT_HP:
+                mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
+                mProgramHandle = GlUtil.createProgram(VERTEX_SHADER,FRAGMENT_SHADER_EXT_HP);
                 break;
             default:
                 throw new RuntimeException("Unhandled type " + programType);
