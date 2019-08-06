@@ -27,6 +27,7 @@ import java.nio.FloatBuffer;
  * GL program and supporting functions for textured 2D shapes.
  * 2D纹理的绘制，目前调用他的是FullFrameRect类
  */
+// TODO: 19-8-6 重写这个类的逻辑
 public class Texture2dProgram {
     private static final String TAG = GlUtil.TAG;
 
@@ -38,7 +39,7 @@ public class Texture2dProgram {
         TEXTURE_DIV_UD,//切割-镜像处理
         TEXTURE_SPLIT,//切割-九宫图
         TEXTURE_MOSAIC,//马赛克
-        TEXTURE_EXT_FILT,//这是一个卷积的demo
+        TEXTURE_EXT_FILT,//这是一个卷积滤镜
         TEXTURE_SMOOTH //模糊
     }
 
@@ -164,29 +165,29 @@ public class Texture2dProgram {
     public static final int KERNEL_SIZE = 9;
     private static final String FRAGMENT_SHADER_EXT_FILT =
             "#extension GL_OES_EGL_image_external : require\n" +
-            "#define KERNEL_SIZE " + KERNEL_SIZE + "\n" +
-            "precision highp float;\n" +
-            "varying vec2 vTextureCoord;\n" +
-            "uniform samplerExternalOES sTexture;\n" +
-            "uniform float uKernel[KERNEL_SIZE];\n" +
-            "uniform vec2 uTexOffset[KERNEL_SIZE];\n" +
-            "uniform float uColorAdjust;\n" +
-            "void main() {\n" +
-            "    int i = 0;\n" +
-            "    vec4 sum = vec4(0.0);\n" +
-            "    if (vTextureCoord.x < vTextureCoord.y - 0.005) {\n" +
-            "        for (i = 0; i < KERNEL_SIZE; i++) {\n" +
-            "            vec4 texc = texture2D(sTexture, vTextureCoord + uTexOffset[i]);\n" +
-            "            sum += texc * uKernel[i];\n" +
-            "        }\n" +
-            "    sum += uColorAdjust;\n" +
-            "    } else if (vTextureCoord.x > vTextureCoord.y + 0.005) {\n" +
-            "        sum = texture2D(sTexture, vTextureCoord);\n" +
-            "    } else {\n" +
-            "        sum.r = 1.0;\n" +
-            "    }\n" +
-            "    gl_FragColor = sum;\n" +
-            "}\n";
+                    "#define KERNEL_SIZE " + KERNEL_SIZE + "\n" +
+                    "precision highp float;\n" +
+                    "varying vec2 vTextureCoord;\n" +
+                    "uniform samplerExternalOES sTexture;\n" +
+                    "uniform float uKernel[KERNEL_SIZE];\n" +
+                    "uniform vec2 uTexOffset[KERNEL_SIZE];\n" +
+                    "uniform float uColorAdjust;\n" +
+                    "void main() {\n" +
+                    "    int i = 0;\n" +
+                    "    vec4 sum = vec4(0.0);\n" +
+                    "    if (vTextureCoord.x < vTextureCoord.y-0.001) {\n" +
+                    "        for (i = 0; i < KERNEL_SIZE; i++) {\n" +
+                    "            vec4 texc = texture2D(sTexture, vTextureCoord + uTexOffset[i]);\n" +
+                    "            sum += texc * uKernel[i];\n" +
+                    "        }\n" +
+                    "    sum += uColorAdjust;\n" +
+                    "    } else if (vTextureCoord.x > vTextureCoord.y+0.001) {\n" +
+                    "        sum = texture2D(sTexture, vTextureCoord);\n" +
+                    "    } else {\n" +
+                    "        sum.r = 1.0;\n" +
+                    "    }\n" +
+                    "    gl_FragColor = sum;\n" +
+                    "}\n";
 
     private static final String FRAGMENT_SMOOTH =
             "#extension GL_OES_EGL_image_external : require\n" +

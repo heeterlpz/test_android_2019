@@ -5,9 +5,6 @@
             android:id="@+id/nav_ext"
             android:title="原图"/>
         <item
-            android:id="@+id/nav_ext_hd"
-            android:title="高清"/>
-        <item
             android:id="@+id/nav_ext_bw"
             android:title="黑白"/>
         <item
@@ -15,6 +12,19 @@
             android:title="马赛克"/>
         <item
             android:id="@+id/nav_smooth"
-            android:title="模糊"/>
+            android:title="smooth"/>
+
+        <item
+            android:id="@+id/nav_obscure"
+            android:title="OBSCURE"/>
+        <item
+            android:id="@+id/nav_sharpening"
+            android:title="SHARPENING"/>
+        <item
+            android:id="@+id/nav_edge"
+            android:title="EDGE"/>
+        <item
+            android:id="@+id/nav_emboss"
+            android:title="EMBOSS"/>
     </group>
 </menu>

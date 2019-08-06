@@ -68,9 +68,6 @@ public class MainActivity extends AppCompatActivity {
                                 case R.id.nav_ext:
                                     myCamera.changeCameraType(Texture2dProgram.ProgramType.TEXTURE_EXT_HP);
                                     break;
-                                case R.id.nav_ext_hd:
-                                    myCamera.changeCameraType(Texture2dProgram.ProgramType.TEXTURE_DIV_UD);
-                                    break;
                                 case R.id.nav_ext_bw:
                                     myCamera.changeCameraType(Texture2dProgram.ProgramType.TEXTURE_EXT_BW);
                                     break;
@@ -79,6 +76,18 @@ public class MainActivity extends AppCompatActivity {
                                     break;
                                 case R.id.nav_smooth:
                                     myCamera.changeCameraType(Texture2dProgram.ProgramType.TEXTURE_SMOOTH);
+                                    break;
+                                case R.id.nav_obscure:
+                                    myCamera.changeCameraType(Texture2dProgram.ProgramType.TEXTURE_EXT_FILT, MsgConfig.MsgArg.OBSCURE_TYPE);
+                                    break;
+                                case R.id.nav_sharpening:
+                                    myCamera.changeCameraType(Texture2dProgram.ProgramType.TEXTURE_EXT_FILT, MsgConfig.MsgArg.SHARPENING_TYPE);
+                                    break;
+                                case R.id.nav_edge:
+                                    myCamera.changeCameraType(Texture2dProgram.ProgramType.TEXTURE_EXT_FILT, MsgConfig.MsgArg.EDGE_TYPE);
+                                    break;
+                                case R.id.nav_emboss:
+                                    myCamera.changeCameraType(Texture2dProgram.ProgramType.TEXTURE_EXT_FILT, MsgConfig.MsgArg.EMBOSS_TYPE);
                                     break;
                                 default:
                                     break;
