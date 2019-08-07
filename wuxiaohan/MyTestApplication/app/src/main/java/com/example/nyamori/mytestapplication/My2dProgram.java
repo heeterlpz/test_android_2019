@@ -1,39 +1,24 @@
-/*
- * Copyright 2014 Google Inc. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+package com.example.nyamori.mytestapplication;
 
-package com.example.nyamori.gles;
-
-import android.opengl.GLES11;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.util.Log;
 
+import com.example.nyamori.gles.GlUtil;
+import com.example.nyamori.gles.ShaderInfo;
+
 import java.nio.FloatBuffer;
 
-/**
- * GL program and supporting functions for textured 2D shapes.
- * 2D纹理的绘制，目前调用他的是FullFrameRect类
- */
-// TODO: 19-8-6 重写这个类的逻辑
-// TODO: 19-8-7 加入Frame的操作而不只是Texture 
-public class Texture2dProgram {
+
+// TODO: 19-8-7 拆解出fliter类
+
+public class My2dProgram {
     private static final String TAG = GlUtil.TAG;
+    private int[] myFrame=new int[1];
+    private int[] textures=new int[2];
+    private int[] fRender=new int[1];
 
     public enum ProgramType {
-        TEXTURE_2D, //不使用的类型
         TEXTURE_EXT,//原图片
         TEXTURE_EXT_HP,//高清版
         TEXTURE_EXT_BW,//黑白滤镜
@@ -70,15 +55,10 @@ public class Texture2dProgram {
     /**
      * Prepares the program in the current EGL context.
      */
-    public Texture2dProgram(ProgramType programType) {
+    public My2dProgram(ProgramType programType) {
         mProgramType = programType;
 
         switch (programType) {
-            case TEXTURE_2D:
-                Log.e(TAG, "Texture2dProgram: wrong program type");
-                mTextureTarget = GLES20.GL_TEXTURE_2D;
-                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER, ShaderInfo.FRAGMENT_SHADER_2D);
-                break;
             case TEXTURE_EXT:
                 mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
                 mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER, ShaderInfo.FRAGMENT_SHADER_EXT);
@@ -171,25 +151,35 @@ public class Texture2dProgram {
      * On exit, the texture will be bound.
      */
     public int createTextureObject() {
-        int[] textures = new int[1];
-        GLES20.glGenTextures(1, textures, 0);
+        GLES20.glGenFramebuffers(1, myFrame, 0);
+        GLES20.glGenTextures(2, textures, 0);
         GlUtil.checkGlError("glGenTextures");
 
-        int texId = textures[0];
-        GLES20.glBindTexture(mTextureTarget, texId);
-        GlUtil.checkGlError("glBindTexture " + texId);
+        for(int i=0;i<2;i++){
+            GLES20.glBindTexture(mTextureTarget, textures[i]);
+            GlUtil.checkGlError("glBindTexture " + textures[i]);
 
-        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER,
-                GLES20.GL_NEAREST);
-        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER,
-                GLES20.GL_LINEAR);
-        GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S,
-                GLES20.GL_CLAMP_TO_EDGE);
-        GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T,
-                GLES20.GL_CLAMP_TO_EDGE);
-        GlUtil.checkGlError("glTexParameter");
+            GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER,
+                    GLES20.GL_NEAREST);
+            GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER,
+                    GLES20.GL_LINEAR);
+            GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S,
+                    GLES20.GL_CLAMP_TO_EDGE);
+            GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T,
+                    GLES20.GL_CLAMP_TO_EDGE);
+            GlUtil.checkGlError("glTexParameter");
+        }
+        GLES20.glBindTexture(mTextureTarget,0);
 
-        return texId;
+//        GLES20.glGenRenderbuffers(1,fRender,0);
+//        GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER,fRender[0]);
+//        GLES20.glRenderbufferStorage(GLES20.GL_RENDERBUFFER,GLES11Ext.GL_DEPTH_COMPONENT16_OES,
+//                2048, 1536);
+//        GLES20.glFramebufferRenderbuffer(GLES20.GL_FRAMEBUFFER, GLES11Ext.GL_DEPTH_ATTACHMENT_OES,
+//                GLES20.GL_RENDERBUFFER, fRender[0]);
+//
+//        GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER,0);
+        return textures[0];
     }
 
     /**
@@ -204,7 +194,6 @@ public class Texture2dProgram {
         }
         System.arraycopy(values, 0, mKernel, 0, ShaderInfo.KERNEL_SIZE);
         mColorAdjust = colorAdj;
-        //Log.d(TAG, "filt kernel: " + Arrays.toString(mKernel) + ", adj=" + colorAdj);
     }
 
     /**
@@ -216,16 +205,14 @@ public class Texture2dProgram {
 
         // Don't need to create a new array here, but it's syntactically convenient.
         mTexOffset = new float[] {
-            -rw, -rh,   0f, -rh,    rw, -rh,
-            -rw, 0f,    0f, 0f,     rw, 0f,
-            -rw, rh,    0f, rh,     rw, rh
+                -rw, -rh,   0f, -rh,    rw, -rh,
+                -rw, 0f,    0f, 0f,     rw, 0f,
+                -rw, rh,    0f, rh,     rw, rh
         };
-        //Log.d(TAG, "filt size: " + width + "x" + height + ": " + Arrays.toString(mTexOffset));
     }
 
     /**
      * Issues the draw call.  Does the full setup on every call.
-     *
      * @param mvpMatrix The 4x4 projection matrix.
      * @param vertexBuffer Buffer with vertex position data.
      * @param firstVertex Index of first vertex to use in vertexBuffer.
@@ -239,9 +226,16 @@ public class Texture2dProgram {
      * @param texStride Width, in bytes, of the texture data for each vertex.
      */
     public void draw(float[] mvpMatrix, FloatBuffer vertexBuffer, int firstVertex,
-            int vertexCount, int coordsPerVertex, int vertexStride,
-            float[] texMatrix, FloatBuffer texBuffer, int textureId, int texStride) {
+                     int vertexCount, int coordsPerVertex, int vertexStride,
+                     float[] texMatrix, FloatBuffer texBuffer, int textureId, int texStride) {
         GlUtil.checkGlError("draw start");
+
+        //绑定FBO
+//        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,myFrame[0]);
+//        GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER,GLES20.GL_COLOR_ATTACHMENT0,
+//                mTextureTarget,textures[1],0);
+//        GLES20.glFramebufferRenderbuffer(GLES20.GL_FRAMEBUFFER, GLES20.GL_DEPTH_ATTACHMENT,
+//                GLES20.GL_RENDERBUFFER, fRender[0]);
 
         //清屏
         GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -269,7 +263,7 @@ public class Texture2dProgram {
 
         // Connect vertexBuffer to "aPosition".
         GLES20.glVertexAttribPointer(maPositionLoc, coordsPerVertex,
-            GLES20.GL_FLOAT, false, vertexStride, vertexBuffer);
+                GLES20.GL_FLOAT, false, vertexStride, vertexBuffer);
         GlUtil.checkGlError("glVertexAttribPointer");
 
         // Enable the "aTextureCoord" vertex attribute.
@@ -279,7 +273,7 @@ public class Texture2dProgram {
         // Connect texBuffer to "aTextureCoord".
         GLES20.glVertexAttribPointer(maTextureCoordLoc, 2,
                 GLES20.GL_FLOAT, false, texStride, texBuffer);
-            GlUtil.checkGlError("glVertexAttribPointer");
+        GlUtil.checkGlError("glVertexAttribPointer");
 
         // Populate the convolution kernel, if present.
         if (muKernelLoc >= 0) {
@@ -295,6 +289,7 @@ public class Texture2dProgram {
         // Done -- disable vertex array, texture, and program.
         GLES20.glDisableVertexAttribArray(maPositionLoc);
         GLES20.glDisableVertexAttribArray(maTextureCoordLoc);
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
         GLES20.glBindTexture(mTextureTarget, 0);
         GLES20.glUseProgram(0);
     }

@@ -65,6 +65,8 @@ public class MyCamera {
 
     private int programTypeID=0;
     private List<Texture2dProgram.ProgramType> programTypeList;
+    private My2dProgram my2dProgram;
+    private MyFrameRect myFrameRect;
 
     public MyCamera(Handler mUIHandler,Surface mOutSurface,Context context){
         this.mUIHandler=mUIHandler;
@@ -205,6 +207,8 @@ public class MyCamera {
         mWindowSurface.makeCurrent();
         //设置了view的大小和起始坐标
         GLES20.glViewport(xStart,yStart,mPreviewSize.getWidth(),mPreviewSize.getHeight());
+
+//        myFrameRect.drawFrame(mTextureID,mMatrix);
         mFullFrameRect.drawFrame(mTextureID,mMatrix);
         mWindowSurface.swapBuffers();
 
@@ -221,13 +225,15 @@ public class MyCamera {
         mWindowSurface=new WindowSurface(mEglCore,mOutSurface,false);
         mWindowSurface.makeCurrent();
         setFrameRect(null);
+//        my2dProgram=new My2dProgram(My2dProgram.ProgramType.TEXTURE_EXT_BW);
+//        myFrameRect=new MyFrameRect(my2dProgram);
+//        mTextureID=myFrameRect.createTextureObject();
+//        mSurfaceTexture.detachFromGLContext();
+//        mSurfaceTexture.attachToGLContext(mTextureID);
         fpsCount=0;
         fpsTime=System.currentTimeMillis();
         openCamera();
     }
-
-
-
 
     private void setFrameRect(Texture2dProgram texture2dProgram){
         if(texture2dProgram==null)texture2dProgram=new Texture2dProgram(programTypeList.get(programTypeID));
@@ -305,7 +311,6 @@ public class MyCamera {
             Toast.makeText(mContext, "配置失败", Toast.LENGTH_SHORT).show();
         }
     };
-
 
     private Size getPreferredPreviewSize(@NonNull Size[] sizes, int width, int height) {
         List<Size> collectorSizes = new ArrayList<>();
