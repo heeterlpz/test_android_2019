@@ -47,7 +47,6 @@ public class MyCamera {
 
     private EglCore mEglCore;
     private SurfaceTexture mSurfaceTexture;
-    private OffscreenSurface mOffscreenSurface;
     private WindowSurface mWindowSurface;
     private FullFrameRect mFullFrameRect;
     private float[] mMatrix=new float[16];
@@ -119,9 +118,6 @@ public class MyCamera {
         if(mWindowSurface!=null){
             mWindowSurface.release();
         }
-        if(mOffscreenSurface!=null){
-            mOffscreenSurface.release();
-        }
         if(mSurfaceTexture!=null){
             mSurfaceTexture.release();
         }
@@ -152,7 +148,6 @@ public class MyCamera {
         programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_MOSAIC);
         programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_SMOOTH);
         programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_EXT_FILT);
-        programTypeID=programTypeList.size()-1;
     }
 
     private void initHandler() {
@@ -185,13 +180,13 @@ public class MyCamera {
             case MsgConfig.MsgArg.NO_ARG:
                 break;
             case MsgConfig.MsgArg.OBSCURE_TYPE:
-                texture2dProgram.setKernel(new float[] {0f, 0.2f, 0f,  0.2f, 0.2f, 0.2f,  0f, 0.2f, 0f}, 0f);
+                texture2dProgram.setKernel(new float[] {0.05f, 0.1f, 0.05f,  0.1f, 0.4f, 0.1f,  0.05f, 0.1f, 0.05f}, 0f);
                 break;
             case MsgConfig.MsgArg.SHARPENING_TYPE:
                 texture2dProgram.setKernel(new float[] {0f, -1f, 0f,  -1f, 5f, -1f,  0f, -1f, 0f}, 0f);
                 break;
             case MsgConfig.MsgArg.EDGE_TYPE:
-                texture2dProgram.setKernel(new float[] {0f, -1f, 0f,  -1f, 4f, -1f,  0f, -1f, 0f}, 0f);
+                texture2dProgram.setKernel(new float[] {0f, 1f, 0f,  1f, -4f, 1f,  0f, 1f, 0f}, 0f);
                 break;
             case MsgConfig.MsgArg.EMBOSS_TYPE:
                 texture2dProgram.setKernel(new float[] {-2f, -1f, 0f,  -1f, 1f, 1f,  0f, 1f, 2f}, 0f);
@@ -204,18 +199,12 @@ public class MyCamera {
 
 
     private void updateImg() {
-        //切换surface到offscreen surface
-        mOffscreenSurface.makeCurrent();
-
         mSurfaceTexture.updateTexImage();//更新了信息
         mSurfaceTexture.getTransformMatrix(mMatrix);
-
         //切换surface到window surface
         mWindowSurface.makeCurrent();
-
         //设置了view的大小和起始坐标
         GLES20.glViewport(xStart,yStart,mPreviewSize.getWidth(),mPreviewSize.getHeight());
-
         mFullFrameRect.drawFrame(mTextureID,mMatrix);
         mWindowSurface.swapBuffers();
 
@@ -229,10 +218,9 @@ public class MyCamera {
     }
 
     private void initOpenGL() {
-        mOffscreenSurface=new OffscreenSurface(mEglCore,mPreviewSize.getHeight(),mPreviewSize.getWidth());
-        mOffscreenSurface.makeCurrent();
-        setFrameRect(null);
         mWindowSurface=new WindowSurface(mEglCore,mOutSurface,false);
+        mWindowSurface.makeCurrent();
+        setFrameRect(null);
         fpsCount=0;
         fpsTime=System.currentTimeMillis();
         openCamera();

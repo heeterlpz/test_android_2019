@@ -47,13 +47,12 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(MainActivity.this, new String[]{"android.permission.CAMERA"}, 1);
         }else {
             initDrawer();
-
-            withOpenGL=(TextView)findViewById(R.id.with_OpenGL);
             initSurfaceView();
         }
     }
 
     private void initDrawer() {
+        withOpenGL=(TextView)findViewById(R.id.with_OpenGL);
         mDrawerLayout=(DrawerLayout)findViewById(R.id.drawer_layout);
         NavigationView navigationView =(NavigationView)findViewById(R.id.nav_view);
         navigationView.setCheckedItem(R.id.nav_ext);

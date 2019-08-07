@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 /**
  * Code for generating images useful for testing textures.
  */
+// TODO: 19-8-7 delete this class
 public class GeneratedTexture {
     //private static final String TAG = GlUtil.TAG;
 

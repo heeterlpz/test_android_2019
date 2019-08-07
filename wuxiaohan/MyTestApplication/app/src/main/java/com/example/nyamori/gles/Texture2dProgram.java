@@ -28,6 +28,7 @@ import java.nio.FloatBuffer;
  * 2D纹理的绘制，目前调用他的是FullFrameRect类
  */
 // TODO: 19-8-6 重写这个类的逻辑
+// TODO: 19-8-7 加入Frame的操作而不只是Texture 
 public class Texture2dProgram {
     private static final String TAG = GlUtil.TAG;
 
@@ -40,188 +41,10 @@ public class Texture2dProgram {
         TEXTURE_SPLIT,//切割-九宫图
         TEXTURE_MOSAIC,//马赛克
         TEXTURE_EXT_FILT,//这是一个卷积滤镜
-        TEXTURE_SMOOTH //模糊
+        TEXTURE_SMOOTH //平滑
     }
 
-    // Simple vertex shader, used for all programs.
-    private static final String VERTEX_SHADER =
-            "uniform mat4 uMVPMatrix;\n" +
-            "uniform mat4 uTexMatrix;\n" +
-            "attribute vec4 aPosition;\n" +
-            "attribute vec4 aTextureCoord;\n" +
-            "varying vec2 vTextureCoord;\n" +
-            "void main() {\n" +
-            "    gl_Position = uMVPMatrix * aPosition;\n" +
-            "    vTextureCoord = (uTexMatrix * aTextureCoord).xy;\n" +
-            "}\n";
 
-    // Simple fragment shader for use with "normal" 2D textures.
-    //相机的texture必须为samplerExternalOES 而sampler2D是二维纹理
-    //这个在相机中无法使用，想显示原图片使用FRAGMENT_SHADER_EXT
-    private static final String FRAGMENT_SHADER_2D =
-            "precision mediump float;\n" +
-            "varying vec2 vTextureCoord;\n" +
-            "uniform sampler2D sTexture;\n" +
-            "void main() {\n" +
-            "    gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
-            "}\n";
-
-    // Simple fragment shader for use with external 2D textures (e.g. what we get from
-    // SurfaceTexture).
-    private static final String FRAGMENT_SHADER_EXT =
-            "#extension GL_OES_EGL_image_external : require\n" +
-            "precision mediump float;\n" +
-            "varying vec2 vTextureCoord;\n" +
-            "uniform samplerExternalOES sTexture;\n" +
-            "void main() {\n" +
-            "    gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
-            "}\n";
-
-    private static final String FRAGMENT_SHADER_EXT_HP =
-            "#extension GL_OES_EGL_image_external : require\n" +
-            "precision highp float;\n" +
-            "varying vec2 vTextureCoord;\n" +
-            "uniform samplerExternalOES sTexture;\n" +
-            "void main() {\n" +
-            "    gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
-            "}\n";
-
-    private static final String FRAGMENT_DIV_UD =
-            "#extension GL_OES_EGL_image_external : require\n" +
-            "precision mediump float;\n" +
-            "varying vec2 vTextureCoord;\n" +
-            "uniform samplerExternalOES sTexture;\n" +
-            "void main() {\n" +
-            "    vec2 uv = vTextureCoord;\n" +
-            "    if (uv.y < 0.5) {\n" +
-            "        uv.y = 1.0 - uv.y;\n" +
-            "    }\n" +
-            "    if (uv.x > 0.5) {\n" +
-            "       uv.x = 1.0 - uv.x;\n" +
-            "    }\n" +
-            "    gl_FragColor = texture2D(sTexture, fract(uv));\n" +
-            "}\n";
-
-    private static final String FRAGMENT_SPLIT =
-            "#extension GL_OES_EGL_image_external : require\n" +
-            "precision mediump float;\n" +
-            "varying vec2 vTextureCoord;\n" +
-            "uniform samplerExternalOES sTexture;\n" +
-            "void main() {\n" +
-            "    vec2 uv = vTextureCoord;\n" +
-            "    if (uv.x < 1.0 / 3.0) {\n" +
-            "        uv.x = uv.x * 3.0;\n" +
-            "    } else if (uv.x < 2.0 / 3.0) {\n" +
-            "        uv.x = (uv.x - 1.0 / 3.0) * 3.0;\n" +
-            "    } else {\n" +
-            "        uv.x = (uv.x - 2.0 / 3.0) * 3.0;\n" +
-            "    }\n" +
-            "    if (uv.y <= 1.0 / 3.0) {\n" +
-            "        uv.y = uv.y * 3.0;\n" +
-            "    } else if (uv.y < 2.0 / 3.0) {\n" +
-            "        uv.y = (uv.y - 1.0 / 3.0) * 3.0;\n" +
-            "    } else {\n" +
-            "        uv.y = (uv.y - 2.0 / 3.0) * 3.0;\n" +
-            "    }\n" +
-            "    gl_FragColor = texture2D(sTexture, uv);\n" +
-            "}\n";
-
-    private static final String FRAGMENT_MOSAIC =
-            "#extension GL_OES_EGL_image_external : require\n" +
-            "precision mediump float;\n" +
-            "varying vec2 vTextureCoord;\n" +
-            "uniform samplerExternalOES sTexture;\n" +
-            "void main() {\n" +
-            "    vec2 uv  = vTextureCoord.xy;\n" +
-            "    float dx = 0.02;\n" +
-            "    float dy = 0.02;\n" +
-            "    vec2 coord = vec2(dx * floor(uv.x / dx), dy * floor(uv.y / dy));\n" +
-            "    vec3 tc = texture2D(sTexture, coord).xyz;\n" +
-            "    gl_FragColor = vec4(tc, 1.0);\n" +
-            "}\n";
-
-    // Fragment shader that converts color to black & white with a simple transformation.
-    private static final String FRAGMENT_SHADER_EXT_BW =
-            "#extension GL_OES_EGL_image_external : require\n" +
-            "precision mediump float;\n" +
-            "varying vec2 vTextureCoord;\n" +
-            "uniform samplerExternalOES sTexture;\n" +
-            "void main() {\n" +
-            "    vec4 tc = texture2D(sTexture, vTextureCoord);\n" +
-            "    float color = tc.r * 0.3 + tc.g * 0.59 + tc.b * 0.11;\n" +
-            "    gl_FragColor = vec4(color, color, color, 1.0);\n" +
-            "}\n";
-
-    // Fragment shader with a convolution filter.  The upper-left half will be drawn normally,
-    // the lower-right half will have the filter applied, and a thin red line will be drawn
-    // at the border.
-    //
-    // This is not optimized for performance.  Some things that might make this faster:
-    // - Remove the conditionals.  They're used to present a half & half view with a red
-    //   stripe across the middle, but that's only useful for a demo.
-    // - Unroll the loop.  Ideally the compiler does this for you when it's beneficial.
-    // - Bake the filter kernel into the shader, instead of passing it through a uniform
-    //   array.  That, combined with loop unrolling, should reduce memory accesses.
-    public static final int KERNEL_SIZE = 9;
-    private static final String FRAGMENT_SHADER_EXT_FILT =
-            "#extension GL_OES_EGL_image_external : require\n" +
-                    "#define KERNEL_SIZE " + KERNEL_SIZE + "\n" +
-                    "precision highp float;\n" +
-                    "varying vec2 vTextureCoord;\n" +
-                    "uniform samplerExternalOES sTexture;\n" +
-                    "uniform float uKernel[KERNEL_SIZE];\n" +
-                    "uniform vec2 uTexOffset[KERNEL_SIZE];\n" +
-                    "uniform float uColorAdjust;\n" +
-                    "void main() {\n" +
-                    "    int i = 0;\n" +
-                    "    vec4 sum = vec4(0.0);\n" +
-                    "    if (vTextureCoord.x < vTextureCoord.y-0.001) {\n" +
-                    "        for (i = 0; i < KERNEL_SIZE; i++) {\n" +
-                    "            vec4 texc = texture2D(sTexture, vTextureCoord + uTexOffset[i]);\n" +
-                    "            sum += texc * uKernel[i];\n" +
-                    "        }\n" +
-                    "    sum += uColorAdjust;\n" +
-                    "    } else if (vTextureCoord.x > vTextureCoord.y+0.001) {\n" +
-                    "        sum = texture2D(sTexture, vTextureCoord);\n" +
-                    "    } else {\n" +
-                    "        sum.r = 1.0;\n" +
-                    "    }\n" +
-                    "    gl_FragColor = sum;\n" +
-                    "}\n";
-
-    private static final String FRAGMENT_SMOOTH =
-            "#extension GL_OES_EGL_image_external : require\n" +
-                    "precision mediump float;\n" +
-                    "varying vec2 vTextureCoord;\n" +
-                    "uniform samplerExternalOES sTexture;\n" +
-                    "void main() {\n" +
-                    "    //给出卷积内核中各个元素对应像素相对于待处理像素的纹理坐标偏移量 3*3内核\n" +
-                    "    vec2 offset0=vec2(-1.0,-1.0); vec2 offset1=vec2(0.0,-1.0); vec2 offset2=vec2(1.0,-1.0);\n" +
-                    "    vec2 offset3=vec2(-1.0,0.0); vec2 offset4=vec2(0.0,0.0); vec2 offset5=vec2(1.0,0.0);\n" +
-                    "    vec2 offset6=vec2(-1.0,1.0); vec2 offset7=vec2(0.0,1.0); vec2 offset8=vec2(1.0,1.0);\n" +
-                    "    const float scaleFactor=1.0/9.0;//给出最终求和时的加权因子(调整亮度)\n" +
-                    "    //卷积内核中各个位置的值\n" +
-                    "    float kernelValue0 = 1.0; float kernelValue1 = 1.0; float kernelValue2 = 1.0;\n" +
-                    "    float kernelValue3 = 1.0; float kernelValue4 = 1.0; float kernelValue5 = 1.0;\n" +
-                    "    float kernelValue6 = 1.0; float kernelValue7 = 1.0; float kernelValue8 = 1.0;\n" +
-                    "    vec4 sum;//最终的颜色和\n" +
-                    "    //获取卷积内核中各个元素对应像素的颜色值\n" +
-                    "    vec4 cTemp0,cTemp1,cTemp2,cTemp3,cTemp4,cTemp5,cTemp6,cTemp7,cTemp8;\n" +
-                    "    cTemp0=texture2D(sTexture, vTextureCoord.st + offset0.xy/512.0);\n" +
-                    "    cTemp1=texture2D(sTexture, vTextureCoord.st + offset1.xy/512.0);\n" +
-                    "    cTemp2=texture2D(sTexture, vTextureCoord.st + offset2.xy/512.0);\n" +
-                    "    cTemp3=texture2D(sTexture, vTextureCoord.st + offset3.xy/512.0);\n" +
-                    "    cTemp4=texture2D(sTexture, vTextureCoord.st + offset4.xy/512.0);\n" +
-                    "    cTemp5=texture2D(sTexture, vTextureCoord.st + offset5.xy/512.0);\n" +
-                    "    cTemp6=texture2D(sTexture, vTextureCoord.st + offset6.xy/512.0);\n" +
-                    "    cTemp7=texture2D(sTexture, vTextureCoord.st + offset7.xy/512.0);\n" +
-                    "    cTemp8=texture2D(sTexture, vTextureCoord.st + offset8.xy/512.0);\n" +
-                    "    //颜色求和\n" +
-                    "    sum =kernelValue0*cTemp0+kernelValue1*cTemp1+kernelValue2*cTemp2+\n" +
-                    "    kernelValue3*cTemp3+kernelValue4*cTemp4+kernelValue5*cTemp5+\n" +
-                    "    kernelValue6*cTemp6+kernelValue7*cTemp7+kernelValue8*cTemp8;\n" +
-                    "    gl_FragColor=sum*scaleFactor;//进行亮度加权后将最终颜色传递给管线\n" +
-                    "}\n";
 
 
     private ProgramType mProgramType;
@@ -238,7 +61,9 @@ public class Texture2dProgram {
 
     private int mTextureTarget;
 
-    private float[] mKernel = new float[KERNEL_SIZE];
+
+
+    private float[] mKernel = new float[ShaderInfo.KERNEL_SIZE];
     private float[] mTexOffset;
     private float mColorAdjust;
 
@@ -252,39 +77,39 @@ public class Texture2dProgram {
             case TEXTURE_2D:
                 Log.e(TAG, "Texture2dProgram: wrong program type");
                 mTextureTarget = GLES20.GL_TEXTURE_2D;
-                mProgramHandle = GlUtil.createProgram(VERTEX_SHADER, FRAGMENT_SHADER_2D);
+                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER, ShaderInfo.FRAGMENT_SHADER_2D);
                 break;
             case TEXTURE_EXT:
                 mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
-                mProgramHandle = GlUtil.createProgram(VERTEX_SHADER, FRAGMENT_SHADER_EXT);
+                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER, ShaderInfo.FRAGMENT_SHADER_EXT);
                 break;
             case TEXTURE_DIV_UD:
                 mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
-                mProgramHandle = GlUtil.createProgram(VERTEX_SHADER, FRAGMENT_DIV_UD);
+                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_DIV_UD);
                 break;
             case TEXTURE_SPLIT:
                 mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
-                mProgramHandle = GlUtil.createProgram(VERTEX_SHADER, FRAGMENT_SPLIT);
+                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SPLIT);
                 break;
             case TEXTURE_MOSAIC:
                 mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
-                mProgramHandle = GlUtil.createProgram(VERTEX_SHADER, FRAGMENT_MOSAIC);
+                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_MOSAIC);
                 break;
             case TEXTURE_SMOOTH:
                 mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
-                mProgramHandle = GlUtil.createProgram(VERTEX_SHADER, FRAGMENT_SMOOTH);
+                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SMOOTH);
                 break;
             case TEXTURE_EXT_BW:
                 mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
-                mProgramHandle = GlUtil.createProgram(VERTEX_SHADER, FRAGMENT_SHADER_EXT_BW);
+                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_EXT_BW);
                 break;
             case TEXTURE_EXT_FILT:
                 mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
-                mProgramHandle = GlUtil.createProgram(VERTEX_SHADER, FRAGMENT_SHADER_EXT_FILT);
+                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_EXT_FILT);
                 break;
             case TEXTURE_EXT_HP:
                 mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
-                mProgramHandle = GlUtil.createProgram(VERTEX_SHADER,FRAGMENT_SHADER_EXT_HP);
+                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_EXT_HP);
                 break;
             default:
                 throw new RuntimeException("Unhandled type " + programType);
@@ -373,11 +198,11 @@ public class Texture2dProgram {
      * @param values Normalized filter values; must be KERNEL_SIZE elements.
      */
     public void setKernel(float[] values, float colorAdj) {
-        if (values.length != KERNEL_SIZE) {
+        if (values.length != ShaderInfo.KERNEL_SIZE) {
             throw new IllegalArgumentException("Kernel size is " + values.length +
-                    " vs. " + KERNEL_SIZE);
+                    " vs. " + ShaderInfo.KERNEL_SIZE);
         }
-        System.arraycopy(values, 0, mKernel, 0, KERNEL_SIZE);
+        System.arraycopy(values, 0, mKernel, 0, ShaderInfo.KERNEL_SIZE);
         mColorAdjust = colorAdj;
         //Log.d(TAG, "filt kernel: " + Arrays.toString(mKernel) + ", adj=" + colorAdj);
     }
@@ -454,8 +279,8 @@ public class Texture2dProgram {
 
         // Populate the convolution kernel, if present.
         if (muKernelLoc >= 0) {
-            GLES20.glUniform1fv(muKernelLoc, KERNEL_SIZE, mKernel, 0);
-            GLES20.glUniform2fv(muTexOffsetLoc, KERNEL_SIZE, mTexOffset, 0);
+            GLES20.glUniform1fv(muKernelLoc, ShaderInfo.KERNEL_SIZE, mKernel, 0);
+            GLES20.glUniform2fv(muTexOffsetLoc, ShaderInfo.KERNEL_SIZE, mTexOffset, 0);
             GLES20.glUniform1f(muColorAdjustLoc, mColorAdjust);
         }
 

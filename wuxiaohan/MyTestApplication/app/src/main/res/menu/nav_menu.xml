@@ -12,7 +12,7 @@
             android:title="马赛克"/>
         <item
             android:id="@+id/nav_smooth"
-            android:title="smooth"/>
+            android:title="平滑"/>
 
         <item
             android:id="@+id/nav_obscure"
