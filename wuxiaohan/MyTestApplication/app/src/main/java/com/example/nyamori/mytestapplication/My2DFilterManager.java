@@ -312,13 +312,6 @@ public class My2DFilterManager {
                 GLES20.GL_FLOAT, false, texStride, texBuffer);
         GlUtil.checkGlError("glVertexAttribPointer");
 
-        // Populate the convolution kernel, if present.
-        if (muKernelLoc >= 0) {
-            GLES20.glUniform1fv(muKernelLoc, ShaderInfo.KERNEL_SIZE, mKernel, 0);
-            GLES20.glUniform2fv(muTexOffsetLoc, ShaderInfo.KERNEL_SIZE, mTexOffset, 0);
-            GLES20.glUniform1f(muColorAdjustLoc, mColorAdjust);
-        }
-
         // Draw the rect.
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, firstVertex, vertexCount);
         GlUtil.checkGlError("glDrawArrays");
@@ -330,8 +323,10 @@ public class My2DFilterManager {
         GLES20.glBindTexture(mTextureTarget, 0);
         GLES20.glUseProgram(0);
 
-        //接下来把frame的数据渲染到屏幕上
 
+
+
+        //接下来把frame的数据渲染到屏幕上
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
 
         GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
