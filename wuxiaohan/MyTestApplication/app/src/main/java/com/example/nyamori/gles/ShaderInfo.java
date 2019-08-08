@@ -15,7 +15,7 @@ public class ShaderInfo {
 
     // Simple fragment shader for use with "normal" 2D textures.
     //相机的texture必须为samplerExternalOES 而sampler2D是二维纹理
-    //这个在相机中无法使用，想显示原图片使用FRAGMENT_SHADER_EXT
+    //最后一步直出
     public static final String FRAGMENT_SHADER_2D =
             "precision mediump float;\n" +
                     "varying vec2 vTextureCoord;\n" +
@@ -34,6 +34,7 @@ public class ShaderInfo {
                     "void main() {\n" +
                     "    gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
                     "}\n";
+
 
     public static final String FRAGMENT_SHADER_EXT_HP =
             "#extension GL_OES_EGL_image_external : require\n" +
