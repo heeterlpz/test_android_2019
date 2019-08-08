@@ -18,8 +18,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mBtnView = (LinearLayout) findViewById(R.id.layout_btns);
-        mCamsView = (LinearLayout) findViewById(R.id.layout_cams);
+        mBtnView = findViewById(R.id.layout_btns);
+        mCamsView = findViewById(R.id.layout_cams);
 
         Button btn_cam = new Button(this);
         btn_cam.setText("cam");
