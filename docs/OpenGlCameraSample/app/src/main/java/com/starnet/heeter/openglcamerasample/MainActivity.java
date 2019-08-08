@@ -31,7 +31,7 @@ public class MainActivity extends AppCompatActivity {
                     mCamsView.removeAllViews();
                 } else {
                     mCameraView = new OpenglCameraView(MainActivity.this, 0);
-                    mCamsView.addView(mCameraView, LinearLayout.LayoutParams.MATCH_PARENT, 600);
+                    mCamsView.addView(mCameraView, LinearLayout.LayoutParams.MATCH_PARENT, 1600);
                 }
             }
         });
