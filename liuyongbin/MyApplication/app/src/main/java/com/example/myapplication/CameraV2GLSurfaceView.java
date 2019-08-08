@@ -1,10 +1,10 @@
-package com.example.cameravtwo.CameraV2GLSurfaceView;
+package com.example.myapplication;
 
 import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.widget.TextView;
 
-import com.example.cameravtwo.CameraV2;
+
 
 public class CameraV2GLSurfaceView extends GLSurfaceView {
     public static final String TAG = "Filter_CameraV2GLSurfaceView";

@@ -1,4 +1,4 @@
-package com.example.cameravtwo.CameraV2GLSurfaceView;
+package com.example.myapplication;
 
 import android.content.Context;
 import android.graphics.SurfaceTexture;
@@ -7,12 +7,7 @@ import android.opengl.GLSurfaceView;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
-import android.widget.LinearLayout;
 import android.widget.TextView;
-
-import com.example.cameravtwo.CameraV2;
-import com.example.cameravtwo.FilterEngine;
-import com.example.cameravtwo.Utils;
 
 import java.nio.FloatBuffer;
 

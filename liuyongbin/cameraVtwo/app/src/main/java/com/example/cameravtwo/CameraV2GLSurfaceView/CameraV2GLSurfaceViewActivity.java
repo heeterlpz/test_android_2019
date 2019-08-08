@@ -21,7 +21,7 @@ public class CameraV2GLSurfaceViewActivity extends Activity {
 
         LinearLayout linearLayout = findViewById(R.id.textureView);
 
-        TextView textView=findViewById(R.id.InfoView);
+        TextView textView = findViewById(R.id.InfoView);
 
         mCameraV2GLSurfaceView = new CameraV2GLSurfaceView(this);//实例化一个GLSurfaceView
         DisplayMetrics dm = new DisplayMetrics();
