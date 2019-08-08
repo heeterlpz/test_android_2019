@@ -7,6 +7,7 @@ import android.opengl.GLES20;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
+import android.util.Log;
 import android.view.Surface;
 import android.view.TextureView;
 import android.widget.RelativeLayout;
@@ -20,6 +21,8 @@ import com.starnet.heeter.openglcamerasample.opengl.WindowSurface;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.starnet.heeter.openglcamerasample.opengl.GlUtil.TAG;
 
 /**
  * Created on 18-12-29.
@@ -106,6 +109,7 @@ public class OpenglCameraView extends RelativeLayout implements TextureView.Surf
                         mScreenSurface = new OffscreenSurface(mEglCore, CAM_WIDTH, CAM_HEIGHT);
                         mScreenSurface.makeCurrent();
                         setFrameBlit(mTextureTypeIndex);
+                        Log.d(TAG, "handleMessage: list"+mTextureTypeList.toString());
                         //surface(输出画布)
                         mOutSourface = (Surface) msg.obj;
                         mWindowSurface = new WindowSurface(mEglCore, mOutSourface, false);
