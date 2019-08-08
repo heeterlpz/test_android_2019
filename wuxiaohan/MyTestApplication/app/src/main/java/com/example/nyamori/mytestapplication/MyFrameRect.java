@@ -2,7 +2,6 @@ package com.example.nyamori.mytestapplication;
 
 import com.example.nyamori.gles.Drawable2d;
 import com.example.nyamori.gles.GlUtil;
-import com.example.nyamori.gles.Texture2dProgram;
 
 public class MyFrameRect {
 
@@ -54,10 +53,10 @@ public class MyFrameRect {
     }
 
     /**
-     * Creates a texture object suitable for use with drawFrame().
+     *接收外部纹理的输入的texture
      */
     public int createTextureObject() {
-        return mProgram.createTextureObject();
+        return mProgram.createInputTextureObject();
     }
 
     /**

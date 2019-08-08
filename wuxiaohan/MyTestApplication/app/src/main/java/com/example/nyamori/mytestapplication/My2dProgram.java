@@ -10,13 +10,16 @@ import com.example.nyamori.gles.ShaderInfo;
 import java.nio.FloatBuffer;
 
 
+
 // TODO: 19-8-7 拆解出fliter类
 
 public class My2dProgram {
     private static final String TAG = GlUtil.TAG;
     private int[] myFrame=new int[1];
-    private int[] textures=new int[2];
+    private int[] textures=new int[1];
     private int[] fRender=new int[1];
+    private int width;
+    private int height;
 
     public enum ProgramType {
         TEXTURE_EXT,//原图片
@@ -55,40 +58,32 @@ public class My2dProgram {
     /**
      * Prepares the program in the current EGL context.
      */
-    public My2dProgram(ProgramType programType) {
+    public My2dProgram(ProgramType programType,int width,int height) {
         mProgramType = programType;
 
         switch (programType) {
             case TEXTURE_EXT:
-                mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
                 mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER, ShaderInfo.FRAGMENT_SHADER_EXT);
                 break;
             case TEXTURE_DIV_UD:
-                mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
                 mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_DIV_UD);
                 break;
             case TEXTURE_SPLIT:
-                mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
                 mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SPLIT);
                 break;
             case TEXTURE_MOSAIC:
-                mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
                 mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_MOSAIC);
                 break;
             case TEXTURE_SMOOTH:
-                mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
                 mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SMOOTH);
                 break;
             case TEXTURE_EXT_BW:
-                mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
                 mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_EXT_BW);
                 break;
             case TEXTURE_EXT_FILT:
-                mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
                 mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_EXT_FILT);
                 break;
             case TEXTURE_EXT_HP:
-                mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
                 mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_EXT_HP);
                 break;
             default:
@@ -98,6 +93,7 @@ public class My2dProgram {
             throw new RuntimeException("Unable to create program");
         }
 
+        mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
         // get locations of attributes and uniforms
 
         maPositionLoc = GLES20.glGetAttribLocation(mProgramHandle, "aPosition");
@@ -139,47 +135,87 @@ public class My2dProgram {
     }
 
     /**
-     * Returns the program type.
-     */
-    public ProgramType getProgramType() {
-        return mProgramType;
-    }
-
-    /**
      * Creates a texture object suitable for use with this program.
      * <p>
      * On exit, the texture will be bound.
      */
-    public int createTextureObject() {
-        GLES20.glGenFramebuffers(1, myFrame, 0);
-        GLES20.glGenTextures(2, textures, 0);
+    public int createInputTextureObject() {
+        int[] textures = new int[1];
+        GLES20.glGenTextures(1, textures, 0);
         GlUtil.checkGlError("glGenTextures");
 
-        for(int i=0;i<2;i++){
-            GLES20.glBindTexture(mTextureTarget, textures[i]);
-            GlUtil.checkGlError("glBindTexture " + textures[i]);
+        int texId = textures[0];
+        GLES20.glBindTexture(mTextureTarget, texId);
+        GlUtil.checkGlError("glBindTexture " + texId);
 
-            GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER,
-                    GLES20.GL_NEAREST);
-            GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER,
-                    GLES20.GL_LINEAR);
-            GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S,
-                    GLES20.GL_CLAMP_TO_EDGE);
-            GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T,
-                    GLES20.GL_CLAMP_TO_EDGE);
-            GlUtil.checkGlError("glTexParameter");
+        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER,
+                GLES20.GL_NEAREST);
+        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER,
+                GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S,
+                GLES20.GL_CLAMP_TO_EDGE);
+        GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T,
+                GLES20.GL_CLAMP_TO_EDGE);
+        GlUtil.checkGlError("glTexParameter");
+
+        innerTexture();
+        return texId;
+    }
+
+    /**
+     * 内部的2d纹理的textures
+     */
+    public void innerTexture(){
+        GLES20.glGenFramebuffers(1, myFrame, 0);
+        GLES20.glGenTextures(1, textures,0);
+        GlUtil.checkGlError("glGenTextures");
+
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,myFrame[0]);
+        GlUtil.checkGlError("glBindFramebuffer "+myFrame[0]);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0]);
+        GlUtil.checkGlError("glBindTexture " + textures[0]);
+
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER,
+                GLES20.GL_NEAREST);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER,
+                GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S,
+                GLES20.GL_CLAMP_TO_EDGE);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T,
+                GLES20.GL_CLAMP_TO_EDGE);
+        GlUtil.checkGlError("glTexParameter");
+
+        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, 2048, 2048, 0,
+                GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null);
+        GlUtil.checkGlError("glTexImage2D");
+
+        GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER,GLES20.GL_COLOR_ATTACHMENT0,
+                GLES20.GL_TEXTURE_2D,textures[0],0);
+        GlUtil.checkGlError("glFramebufferTexture2D");
+
+        if (GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER) != GLES20.GL_FRAMEBUFFER_COMPLETE)
+        {
+            Log.d(TAG, "innerTexture: true="+GLES20.GL_FRAMEBUFFER_COMPLETE);
+            Log.e(TAG, "innerTexture: error init frame buffer="+GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER));
         }
-        GLES20.glBindTexture(mTextureTarget,0);
 
-//        GLES20.glGenRenderbuffers(1,fRender,0);
-//        GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER,fRender[0]);
-//        GLES20.glRenderbufferStorage(GLES20.GL_RENDERBUFFER,GLES11Ext.GL_DEPTH_COMPONENT16_OES,
-//                2048, 1536);
-//        GLES20.glFramebufferRenderbuffer(GLES20.GL_FRAMEBUFFER, GLES11Ext.GL_DEPTH_ATTACHMENT_OES,
-//                GLES20.GL_RENDERBUFFER, fRender[0]);
-//
-//        GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER,0);
-        return textures[0];
+        GLES20.glGenRenderbuffers(1,fRender,0);
+        GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER,fRender[0]);
+        GLES20.glRenderbufferStorage(GLES20.GL_RENDERBUFFER,GLES20.GL_DEPTH_COMPONENT16,
+                2048, 2048);
+        GLES20.glFramebufferRenderbuffer(GLES20.GL_FRAMEBUFFER, GLES20.GL_DEPTH_ATTACHMENT,
+                GLES20.GL_RENDERBUFFER, fRender[0]);
+        GlUtil.checkGlError("glFramebufferRenderbuffer");
+
+        if (GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER) != GLES20.GL_FRAMEBUFFER_COMPLETE)
+        {
+            Log.d(TAG, "innerTexture: true="+GLES20.GL_FRAMEBUFFER_COMPLETE);
+            Log.e(TAG, "innerTexture: error init frame buffer="+GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER));
+        }
+
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,0);
+        GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER,0);
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
     }
 
     /**
@@ -231,15 +267,13 @@ public class My2dProgram {
         GlUtil.checkGlError("draw start");
 
         //绑定FBO
-//        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,myFrame[0]);
-//        GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER,GLES20.GL_COLOR_ATTACHMENT0,
-//                mTextureTarget,textures[1],0);
-//        GLES20.glFramebufferRenderbuffer(GLES20.GL_FRAMEBUFFER, GLES20.GL_DEPTH_ATTACHMENT,
-//                GLES20.GL_RENDERBUFFER, fRender[0]);
-
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,myFrame[0]);
+        GlUtil.checkGlError("glBindFramebuffer");
+        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         //清屏
         GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+        GlUtil.checkGlError("glClearColor");
 
         // Select the program.
         GLES20.glUseProgram(mProgramHandle);
@@ -248,6 +282,10 @@ public class My2dProgram {
         // Set the texture.
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(mTextureTarget, textureId);
+
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0]);
 
         // Copy the model / view / projection matrix over.
         GLES20.glUniformMatrix4fv(muMVPMatrixLoc, 1, false, mvpMatrix, 0);
@@ -281,6 +319,59 @@ public class My2dProgram {
             GLES20.glUniform2fv(muTexOffsetLoc, ShaderInfo.KERNEL_SIZE, mTexOffset, 0);
             GLES20.glUniform1f(muColorAdjustLoc, mColorAdjust);
         }
+
+        // Draw the rect.
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, firstVertex, vertexCount);
+        GlUtil.checkGlError("glDrawArrays");
+
+        // Done -- disable vertex array, texture, and program.
+        GLES20.glDisableVertexAttribArray(maPositionLoc);
+        GLES20.glDisableVertexAttribArray(maTextureCoordLoc);
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
+        GLES20.glBindTexture(mTextureTarget, 0);
+        GLES20.glUseProgram(0);
+
+        //接下来把frame的数据渲染到屏幕上
+
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
+        GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+        GlUtil.checkGlError("glClearColor");
+
+
+        int program=GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_2D);
+        // Select the program.
+        GLES20.glUseProgram(program);
+        GlUtil.checkGlError("glUseProgram");
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0]);
+
+        // Copy the model / view / projection matrix over.
+        GLES20.glUniformMatrix4fv(muMVPMatrixLoc, 1, false, mvpMatrix, 0);
+        GlUtil.checkGlError("glUniformMatrix4fv");
+
+        // Copy the texture transformation matrix over.
+        GLES20.glUniformMatrix4fv(muTexMatrixLoc, 1, false, texMatrix, 0);
+        GlUtil.checkGlError("glUniformMatrix4fv");
+
+        // Enable the "aPosition" vertex attribute.
+        GLES20.glEnableVertexAttribArray(maPositionLoc);
+        GlUtil.checkGlError("glEnableVertexAttribArray");
+
+        // Connect vertexBuffer to "aPosition".
+        GLES20.glVertexAttribPointer(maPositionLoc, coordsPerVertex,
+                GLES20.GL_FLOAT, false, vertexStride, vertexBuffer);
+        GlUtil.checkGlError("glVertexAttribPointer");
+
+        // Enable the "aTextureCoord" vertex attribute.
+        GLES20.glEnableVertexAttribArray(maTextureCoordLoc);
+        GlUtil.checkGlError("glEnableVertexAttribArray");
+
+        // Connect texBuffer to "aTextureCoord".
+        GLES20.glVertexAttribPointer(maTextureCoordLoc, 2,
+                GLES20.GL_FLOAT, false, texStride, texBuffer);
+        GlUtil.checkGlError("glVertexAttribPointer");
 
         // Draw the rect.
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, firstVertex, vertexCount);

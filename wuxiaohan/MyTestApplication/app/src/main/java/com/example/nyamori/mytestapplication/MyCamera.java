@@ -22,9 +22,7 @@ import android.view.Surface;
 import android.widget.Toast;
 
 import com.example.nyamori.gles.EglCore;
-import com.example.nyamori.gles.FullFrameRect;
 import com.example.nyamori.gles.OffscreenSurface;
-import com.example.nyamori.gles.Texture2dProgram;
 import com.example.nyamori.gles.WindowSurface;
 
 import java.util.ArrayList;
@@ -47,8 +45,8 @@ public class MyCamera {
 
     private EglCore mEglCore;
     private SurfaceTexture mSurfaceTexture;
+    private OffscreenSurface mOffscreenSurface;
     private WindowSurface mWindowSurface;
-    private FullFrameRect mFullFrameRect;
     private float[] mMatrix=new float[16];
     private Surface mOutSurface;
     private Handler mOpenGLHandler;
@@ -64,8 +62,7 @@ public class MyCamera {
     private Context mContext;
 
     private int programTypeID=0;
-    private List<Texture2dProgram.ProgramType> programTypeList;
-    private My2dProgram my2dProgram;
+    private List<My2dProgram.ProgramType> programTypeList;
     private MyFrameRect myFrameRect;
 
     public MyCamera(Handler mUIHandler,Surface mOutSurface,Context context){
@@ -123,19 +120,16 @@ public class MyCamera {
         if(mSurfaceTexture!=null){
             mSurfaceTexture.release();
         }
-        if(mFullFrameRect!=null){
-            mFullFrameRect.release(true);
-        }
         if(mEglCore!=null){
             mEglCore.release();
         }
     }
 
-    public void changeCameraType(Texture2dProgram.ProgramType programType){
+    public void changeCameraType(My2dProgram.ProgramType programType){
         changeCameraType(programType,MsgConfig.MsgArg.NO_ARG);
     }
 
-    public void changeCameraType(Texture2dProgram.ProgramType programType,int arg){
+    public void changeCameraType(My2dProgram.ProgramType programType,int arg){
         if(programTypeList.contains(programType)){
             programTypeID=programTypeList.indexOf(programType);
             mOpenGLHandler.obtainMessage(MsgConfig.OPenGLMsg.MSG_CHANGE_TYPE,arg,0).sendToTarget();
@@ -145,11 +139,11 @@ public class MyCamera {
     private void initProgramTypeList() {
         programTypeList=new ArrayList<>();
         //目前支持的处理方式
-        programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_EXT_HP);
-        programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_EXT_BW);
-        programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_MOSAIC);
-        programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_SMOOTH);
-        programTypeList.add(Texture2dProgram.ProgramType.TEXTURE_EXT_FILT);
+        programTypeList.add(My2dProgram.ProgramType.TEXTURE_EXT_HP);
+        programTypeList.add(My2dProgram.ProgramType.TEXTURE_EXT_BW);
+        programTypeList.add(My2dProgram.ProgramType.TEXTURE_MOSAIC);
+        programTypeList.add(My2dProgram.ProgramType.TEXTURE_SMOOTH);
+        programTypeList.add(My2dProgram.ProgramType.TEXTURE_EXT_FILT);
     }
 
     private void initHandler() {
@@ -177,7 +171,7 @@ public class MyCamera {
     }
 
     private void changeType(int code) {
-        Texture2dProgram texture2dProgram=new Texture2dProgram(programTypeList.get(programTypeID));
+        My2dProgram texture2dProgram=new My2dProgram(programTypeList.get(programTypeID),mPreviewSize.getWidth(),mPreviewSize.getHeight());
         switch (code){
             case MsgConfig.MsgArg.NO_ARG:
                 break;
@@ -203,13 +197,11 @@ public class MyCamera {
     private void updateImg() {
         mSurfaceTexture.updateTexImage();//更新了信息
         mSurfaceTexture.getTransformMatrix(mMatrix);
-        //切换surface到window surface
-        mWindowSurface.makeCurrent();
-        //设置了view的大小和起始坐标
-        GLES20.glViewport(xStart,yStart,mPreviewSize.getWidth(),mPreviewSize.getHeight());
+        myFrameRect.drawFrame(mTextureID,mMatrix);
 
-//        myFrameRect.drawFrame(mTextureID,mMatrix);
-        mFullFrameRect.drawFrame(mTextureID,mMatrix);
+        //设置了view的大小和起始坐标
+        GLES20.glViewport(0,0,mPreviewSize.getWidth(),mPreviewSize.getHeight());
+
         mWindowSurface.swapBuffers();
 
         fpsCount++;
@@ -222,27 +214,23 @@ public class MyCamera {
     }
 
     private void initOpenGL() {
+        //mOffscreenSurface=new OffscreenSurface(mEglCore,mPreviewSize.getWidth(),mPreviewSize.getHeight());
         mWindowSurface=new WindowSurface(mEglCore,mOutSurface,false);
         mWindowSurface.makeCurrent();
         setFrameRect(null);
-//        my2dProgram=new My2dProgram(My2dProgram.ProgramType.TEXTURE_EXT_BW);
-//        myFrameRect=new MyFrameRect(my2dProgram);
-//        mTextureID=myFrameRect.createTextureObject();
-//        mSurfaceTexture.detachFromGLContext();
-//        mSurfaceTexture.attachToGLContext(mTextureID);
         fpsCount=0;
         fpsTime=System.currentTimeMillis();
         openCamera();
     }
 
-    private void setFrameRect(Texture2dProgram texture2dProgram){
-        if(texture2dProgram==null)texture2dProgram=new Texture2dProgram(programTypeList.get(programTypeID));
-        if(mFullFrameRect==null){
-            mFullFrameRect=new FullFrameRect(texture2dProgram);
+    private void setFrameRect(My2dProgram my2dProgram){
+        if(my2dProgram==null)my2dProgram=new My2dProgram(programTypeList.get(programTypeID),mPreviewSize.getWidth(),mPreviewSize.getHeight());
+        if(myFrameRect==null){
+            myFrameRect=new MyFrameRect(my2dProgram);
         }else {
-            mFullFrameRect.changeProgram(texture2dProgram);
+            myFrameRect.changeProgram(my2dProgram);
         }
-        mTextureID=mFullFrameRect.createTextureObject();
+        mTextureID=myFrameRect.createTextureObject();
         mSurfaceTexture.detachFromGLContext();
         mSurfaceTexture.attachToGLContext(mTextureID);
     }
