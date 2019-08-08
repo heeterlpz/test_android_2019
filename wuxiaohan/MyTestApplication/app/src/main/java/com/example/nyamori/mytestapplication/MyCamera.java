@@ -39,13 +39,11 @@ public class MyCamera {
     private CameraManager mCameraManager;
     private String cameraID;
     private CameraDevice mCamera;
-    private CameraCaptureSession mSession;
     private Handler mCameraHandler;
     private CaptureRequest.Builder mPreviewBuilder;
 
     private EglCore mEglCore;
     private SurfaceTexture mSurfaceTexture;
-    private OffscreenSurface mOffscreenSurface;
     private WindowSurface mWindowSurface;
     private float[] mMatrix=new float[16];
     private Surface mOutSurface;
@@ -62,7 +60,7 @@ public class MyCamera {
     private Context mContext;
 
     private int programTypeID=0;
-    private List<My2dProgram.ProgramType> programTypeList;
+    private List<My2DFilterManager.ProgramType> programTypeList;
     private MyFrameRect myFrameRect;
 
     public MyCamera(Handler mUIHandler,Surface mOutSurface,Context context){
@@ -125,11 +123,11 @@ public class MyCamera {
         }
     }
 
-    public void changeCameraType(My2dProgram.ProgramType programType){
+    public void changeCameraType(My2DFilterManager.ProgramType programType){
         changeCameraType(programType,MsgConfig.MsgArg.NO_ARG);
     }
 
-    public void changeCameraType(My2dProgram.ProgramType programType,int arg){
+    public void changeCameraType(My2DFilterManager.ProgramType programType, int arg){
         if(programTypeList.contains(programType)){
             programTypeID=programTypeList.indexOf(programType);
             mOpenGLHandler.obtainMessage(MsgConfig.OPenGLMsg.MSG_CHANGE_TYPE,arg,0).sendToTarget();
@@ -139,11 +137,11 @@ public class MyCamera {
     private void initProgramTypeList() {
         programTypeList=new ArrayList<>();
         //目前支持的处理方式
-        programTypeList.add(My2dProgram.ProgramType.TEXTURE_EXT_HP);
-        programTypeList.add(My2dProgram.ProgramType.TEXTURE_EXT_BW);
-        programTypeList.add(My2dProgram.ProgramType.TEXTURE_MOSAIC);
-        programTypeList.add(My2dProgram.ProgramType.TEXTURE_SMOOTH);
-        programTypeList.add(My2dProgram.ProgramType.TEXTURE_EXT_FILT);
+        programTypeList.add(My2DFilterManager.ProgramType.TEXTURE_EXT_HP);
+        programTypeList.add(My2DFilterManager.ProgramType.TEXTURE_EXT_BW);
+        programTypeList.add(My2DFilterManager.ProgramType.TEXTURE_MOSAIC);
+        programTypeList.add(My2DFilterManager.ProgramType.TEXTURE_SMOOTH);
+        programTypeList.add(My2DFilterManager.ProgramType.TEXTURE_EXT_FILT);
     }
 
     private void initHandler() {
@@ -171,7 +169,7 @@ public class MyCamera {
     }
 
     private void changeType(int code) {
-        My2dProgram texture2dProgram=new My2dProgram(programTypeList.get(programTypeID),mPreviewSize.getWidth(),mPreviewSize.getHeight());
+        My2DFilterManager texture2dProgram=new My2DFilterManager(programTypeList.get(programTypeID),mPreviewSize.getWidth(),mPreviewSize.getHeight());
         switch (code){
             case MsgConfig.MsgArg.NO_ARG:
                 break;
@@ -214,7 +212,6 @@ public class MyCamera {
     }
 
     private void initOpenGL() {
-        //mOffscreenSurface=new OffscreenSurface(mEglCore,mPreviewSize.getWidth(),mPreviewSize.getHeight());
         mWindowSurface=new WindowSurface(mEglCore,mOutSurface,false);
         mWindowSurface.makeCurrent();
         setFrameRect(null);
@@ -223,12 +220,12 @@ public class MyCamera {
         openCamera();
     }
 
-    private void setFrameRect(My2dProgram my2dProgram){
-        if(my2dProgram==null)my2dProgram=new My2dProgram(programTypeList.get(programTypeID),mPreviewSize.getWidth(),mPreviewSize.getHeight());
+    private void setFrameRect(My2DFilterManager my2DFilterManager){
+        if(my2DFilterManager ==null) my2DFilterManager =new My2DFilterManager(programTypeList.get(programTypeID),mPreviewSize.getWidth(),mPreviewSize.getHeight());
         if(myFrameRect==null){
-            myFrameRect=new MyFrameRect(my2dProgram);
+            myFrameRect=new MyFrameRect(my2DFilterManager);
         }else {
-            myFrameRect.changeProgram(my2dProgram);
+            myFrameRect.changeProgram(my2DFilterManager);
         }
         mTextureID=myFrameRect.createTextureObject();
         mSurfaceTexture.detachFromGLContext();
@@ -282,7 +279,7 @@ public class MyCamera {
         @Override
         public void onConfigured(@NonNull CameraCaptureSession session) {
             if(mCamera==null)return;
-            mSession = session;
+            CameraCaptureSession mSession = session;
             //配置完毕开始预览
             try {
                 //自动对焦

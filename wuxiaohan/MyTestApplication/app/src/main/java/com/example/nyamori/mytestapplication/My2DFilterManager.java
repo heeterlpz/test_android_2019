@@ -11,10 +11,10 @@ import java.nio.FloatBuffer;
 
 
 
-// TODO: 19-8-7 拆解出fliter类
+// TODO: 19-8-7 拆解出filter类,将类改造成滤镜管理
 
-public class My2dProgram {
-    private static final String TAG = GlUtil.TAG;
+public class My2DFilterManager {
+    private static final String TAG = "My2DFilterManager";
     private int[] myFrame=new int[1];
     private int[] textures=new int[1];
     private int[] fRender=new int[1];
@@ -58,7 +58,7 @@ public class My2dProgram {
     /**
      * Prepares the program in the current EGL context.
      */
-    public My2dProgram(ProgramType programType,int width,int height) {
+    public My2DFilterManager(ProgramType programType, int width, int height) {
         mProgramType = programType;
 
         switch (programType) {
@@ -283,7 +283,6 @@ public class My2dProgram {
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(mTextureTarget, textureId);
 
-
         GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0]);
 
@@ -334,6 +333,7 @@ public class My2dProgram {
         //接下来把frame的数据渲染到屏幕上
 
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
+
         GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         GlUtil.checkGlError("glClearColor");

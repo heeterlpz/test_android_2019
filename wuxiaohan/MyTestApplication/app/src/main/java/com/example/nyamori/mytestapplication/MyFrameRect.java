@@ -6,7 +6,7 @@ import com.example.nyamori.gles.GlUtil;
 public class MyFrameRect {
 
     private final Drawable2d mRectDrawable = new Drawable2d(Drawable2d.Prefab.FULL_RECTANGLE);
-    private My2dProgram mProgram;
+    private My2DFilterManager mProgram;
 
     /**
      * Prepares the object.
@@ -14,7 +14,7 @@ public class MyFrameRect {
      * @param program The program to use.  FullFrameRect takes ownership, and will release
      *     the program when no longer needed.
      */
-    public MyFrameRect(My2dProgram program) {
+    public MyFrameRect(My2DFilterManager program) {
         mProgram = program;
     }
 
@@ -38,7 +38,7 @@ public class MyFrameRect {
     /**
      * Returns the program currently in use.
      */
-    public My2dProgram getProgram() {
+    public My2DFilterManager getProgram() {
         return mProgram;
     }
 
@@ -47,7 +47,7 @@ public class MyFrameRect {
      * <p>
      * The appropriate EGL context must be current.
      */
-    public void changeProgram(My2dProgram program) {
+    public void changeProgram(My2DFilterManager program) {
         mProgram.release();
         mProgram = program;
     }

@@ -63,28 +63,28 @@ public class MainActivity extends AppCompatActivity {
                         }else {
                             switch (item.getItemId()){
                                 case R.id.nav_ext:
-                                    myCamera.changeCameraType(My2dProgram.ProgramType.TEXTURE_EXT_HP);
+                                    myCamera.changeCameraType(My2DFilterManager.ProgramType.TEXTURE_EXT_HP);
                                     break;
                                 case R.id.nav_ext_bw:
-                                    myCamera.changeCameraType(My2dProgram.ProgramType.TEXTURE_EXT_BW);
+                                    myCamera.changeCameraType(My2DFilterManager.ProgramType.TEXTURE_EXT_BW);
                                     break;
                                 case R.id.nav_mosaic:
-                                    myCamera.changeCameraType(My2dProgram.ProgramType.TEXTURE_MOSAIC);
+                                    myCamera.changeCameraType(My2DFilterManager.ProgramType.TEXTURE_MOSAIC);
                                     break;
                                 case R.id.nav_smooth:
-                                    myCamera.changeCameraType(My2dProgram.ProgramType.TEXTURE_SMOOTH);
+                                    myCamera.changeCameraType(My2DFilterManager.ProgramType.TEXTURE_SMOOTH);
                                     break;
                                 case R.id.nav_obscure:
-                                    myCamera.changeCameraType(My2dProgram.ProgramType.TEXTURE_EXT_FILT, MsgConfig.MsgArg.OBSCURE_TYPE);
+                                    myCamera.changeCameraType(My2DFilterManager.ProgramType.TEXTURE_EXT_FILT, MsgConfig.MsgArg.OBSCURE_TYPE);
                                     break;
                                 case R.id.nav_sharpening:
-                                    myCamera.changeCameraType(My2dProgram.ProgramType.TEXTURE_EXT_FILT, MsgConfig.MsgArg.SHARPENING_TYPE);
+                                    myCamera.changeCameraType(My2DFilterManager.ProgramType.TEXTURE_EXT_FILT, MsgConfig.MsgArg.SHARPENING_TYPE);
                                     break;
                                 case R.id.nav_edge:
-                                    myCamera.changeCameraType(My2dProgram.ProgramType.TEXTURE_EXT_FILT, MsgConfig.MsgArg.EDGE_TYPE);
+                                    myCamera.changeCameraType(My2DFilterManager.ProgramType.TEXTURE_EXT_FILT, MsgConfig.MsgArg.EDGE_TYPE);
                                     break;
                                 case R.id.nav_emboss:
-                                    myCamera.changeCameraType(My2dProgram.ProgramType.TEXTURE_EXT_FILT, MsgConfig.MsgArg.EMBOSS_TYPE);
+                                    myCamera.changeCameraType(My2DFilterManager.ProgramType.TEXTURE_EXT_FILT, MsgConfig.MsgArg.EMBOSS_TYPE);
                                     break;
                                 default:
                                     break;
@@ -130,6 +130,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initSurfaceView() {
+        // TODO: 19-8-8 解决handler可能的内存泄露 
         mUIHandler=new Handler(){
             @Override
             public void handleMessage(Message msg) {
