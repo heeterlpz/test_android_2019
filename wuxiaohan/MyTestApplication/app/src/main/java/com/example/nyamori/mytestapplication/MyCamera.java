@@ -99,6 +99,7 @@ public class MyCamera {
                     Log.d(TAG, "initCamera: new size="+mPreviewSize.toString());
                 }
                 xStart=(width-mPreviewSize.getWidth())/2;
+                Log.d(TAG, "initCamera: xstart="+xStart);
                 yStart=(height-mPreviewSize.getHeight());
                 mOpenGLHandler.obtainMessage(MsgConfig.OPenGLMsg.MSG_INIT_OUT).sendToTarget();
             }
@@ -169,7 +170,7 @@ public class MyCamera {
     }
 
     private void changeType(int code) {
-        My2DFilterManager texture2dProgram=new My2DFilterManager(programTypeList.get(programTypeID),mPreviewSize.getWidth(),mPreviewSize.getHeight());
+        My2DFilterManager texture2dProgram=new My2DFilterManager(programTypeList.get(programTypeID));
         switch (code){
             case MsgConfig.MsgArg.NO_ARG:
                 break;
@@ -195,11 +196,9 @@ public class MyCamera {
     private void updateImg() {
         mSurfaceTexture.updateTexImage();//更新了信息
         mSurfaceTexture.getTransformMatrix(mMatrix);
-        myFrameRect.drawFrame(mTextureID,mMatrix);
 
         //设置了view的大小和起始坐标
-        GLES20.glViewport(0,0,mPreviewSize.getWidth(),mPreviewSize.getHeight());
-
+        myFrameRect.drawFrame(mTextureID,mMatrix);
         mWindowSurface.swapBuffers();
 
         fpsCount++;
@@ -221,7 +220,7 @@ public class MyCamera {
     }
 
     private void setFrameRect(My2DFilterManager my2DFilterManager){
-        if(my2DFilterManager ==null) my2DFilterManager =new My2DFilterManager(programTypeList.get(programTypeID),mPreviewSize.getWidth(),mPreviewSize.getHeight());
+        if(my2DFilterManager ==null) my2DFilterManager =new My2DFilterManager(programTypeList.get(programTypeID));
         if(myFrameRect==null){
             myFrameRect=new MyFrameRect(my2DFilterManager);
         }else {
@@ -300,9 +299,9 @@ public class MyCamera {
     private Size getPreferredPreviewSize(@NonNull Size[] sizes, int width, int height) {
         List<Size> collectorSizes = new ArrayList<>();
         for (Size option : sizes) {
+            Log.d(TAG, "getPreferredPreviewSize:size="+option.toString());
             if (option.getWidth() < width || option.getHeight() < height) {
                 collectorSizes.add(option);
-                Log.d(TAG, "getPreferredPreviewSize:add size="+option.toString());
             }
         }
         if (collectorSizes.size() > 0) {
