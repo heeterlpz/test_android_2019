@@ -6,8 +6,9 @@ import android.util.Log;
 
 import com.example.nyamori.gles.GlUtil;
 import com.example.nyamori.gles.ShaderInfo;
+import com.example.nyamori.mytestapplication.filters.BWFilter;
 import com.example.nyamori.mytestapplication.filters.InputFilter;
-import com.example.nyamori.mytestapplication.filters.OutputFliter;
+import com.example.nyamori.mytestapplication.filters.OutputFilter;
 
 import java.nio.FloatBuffer;
 
@@ -46,7 +47,8 @@ public class My2DFilterManager {
 
 
     private InputFilter inputFilter;
-    private OutputFliter outputFliter;
+    private OutputFilter outputFliter;
+    private BWFilter bwFilter;
 
     private float[] mKernel = new float[ShaderInfo.KERNEL_SIZE];
     private float[] mTexOffset;
@@ -115,7 +117,8 @@ public class My2DFilterManager {
         }
 
         inputFilter=new InputFilter(2048,2048);
-        outputFliter=new OutputFliter(1536,2048);
+        outputFliter=new OutputFilter(1536,2048);
+        bwFilter=new BWFilter(2048,2048);
     }
 
     /**
@@ -317,6 +320,8 @@ public class My2DFilterManager {
 //        inputFilter.draw(textureId,texMatrix);
 //        int preTexture=inputFilter.getTexture();
 
+//        bwFilter.draw(preTexture,texMatrix);
+//        preTexture=bwFilter.getTexture();
         outputFliter.draw(preTexture,texMatrix);
     }
 }

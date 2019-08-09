@@ -5,7 +5,7 @@ import android.opengl.GLES20;
 
 import com.example.nyamori.mytestapplication.MyFrameRect;
 
-public class InputFilter extends baseFilter {
+public class InputFilter extends BaseFilter {
     public InputFilter(int width,int height){
         super(width,height);
     }

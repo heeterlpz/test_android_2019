@@ -185,7 +185,6 @@ public class ShaderInfo {
 
 
     public static final String FRAGMENT_SHADER_BW =
-            "#extension GL_OES_EGL_image_external : require\n" +
                     "precision mediump float;\n" +
                     "varying vec2 vTextureCoord;\n" +
                     "uniform sampler2D sTexture;\n" +

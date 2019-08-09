@@ -5,9 +5,9 @@ import android.opengl.GLES20;
 import com.example.nyamori.gles.GlUtil;
 import com.example.nyamori.gles.ShaderInfo;
 
-public class OutputFliter extends baseFilter{
+public class OutputFilter extends BaseFilter {
 
-    public OutputFliter(int width,int height){
+    public OutputFilter(int width, int height){
         super();
         this.width=width;
         this.height=height;

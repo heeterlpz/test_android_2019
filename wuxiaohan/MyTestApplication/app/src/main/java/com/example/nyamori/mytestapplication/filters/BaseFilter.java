@@ -11,7 +11,7 @@ import com.example.nyamori.mytestapplication.MyFrameRect;
 import java.nio.FloatBuffer;
 
 // TODO: 19-8-8 完成基础fliter类
-public class baseFilter {
+public class BaseFilter {
     protected final static String TAG="filter";
     protected int mProgramHandle;
 
@@ -34,11 +34,9 @@ public class baseFilter {
     protected int vertexStride;
     protected int texStride;
 
-    public baseFilter(){
-        initRect();
-    }
+    public BaseFilter(){ }
 
-    public baseFilter(int width,int height){
+    public BaseFilter(int width, int height){
         mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_EXT_HP);
         if (mProgramHandle == 0) {
             throw new RuntimeException("Unable to create program");
@@ -151,6 +149,7 @@ public class baseFilter {
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, preTexture);
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, myTexture[0]);
+    //    GLES20.glUniform1i(myTexture[0],0);
     }
 
     public void setUniform(){
