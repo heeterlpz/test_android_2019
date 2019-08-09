@@ -233,6 +233,12 @@ public class My2DFilterManager {
     }
 
     // TODO: 19-8-9 继续拆解
+
+    /**
+     *偶发 报错如下
+     * E/Adreno-GSL: <gsl_memory_alloc_pure:2236>: GSL MEM ERROR: kgsl_sharedmem_alloc ioctl failed.
+     * W/Adreno-GSL: <sharedmem_gpuobj_alloc:2436>: sharedmem_gpumem_alloc: mmap failed errno 12 Out of memory
+     */
     public void onDraw(FloatBuffer vertexBuffer, int firstVertex,
                        int vertexCount, int coordsPerVertex, int vertexStride,
                        float[] texMatrix, FloatBuffer texBuffer,int texStride){

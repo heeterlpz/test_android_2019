@@ -17,7 +17,7 @@ public class AndroidCamera implements Camera.ErrorCallback, Camera.PreviewCallba
 
     public void start(int index ,SurfaceTexture surface,
                             int width, int height) {
-        relese();
+        relese();//
         try {
             System.out.println("openCamera : " + index);
             mCamera = Camera.open(index);
