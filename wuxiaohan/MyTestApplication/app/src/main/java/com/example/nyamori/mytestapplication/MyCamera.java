@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+// TODO: 19-8-9 解决整体的时延问题 
 public class MyCamera {
     private final static String TAG = "MyCamera";
 
@@ -46,7 +47,6 @@ public class MyCamera {
     private SurfaceTexture mSurfaceTexture;
     private WindowSurface mWindowSurface;
     private float[] mMatrix=new float[16];
-    private Surface mOutSurface;
     private Handler mOpenGLHandler;
 
     private int fpsCount;
@@ -66,16 +66,9 @@ public class MyCamera {
     public MyCamera(Handler mUIHandler,Surface mOutSurface,Context context){
         this.mUIHandler=mUIHandler;
         this.mContext=context;
-        this.mOutSurface=mOutSurface;
         mEglCore=new EglCore(null,EglCore.FLAG_RECORDABLE);
+        mWindowSurface=new WindowSurface(mEglCore,mOutSurface,false);
         mCameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
-        mSurfaceTexture=new SurfaceTexture(-1);
-        mSurfaceTexture.setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
-            @Override
-            public void onFrameAvailable(SurfaceTexture surfaceTexture) {
-                mOpenGLHandler.obtainMessage(MsgConfig.OPenGLMsg.MSG_UPDATE_IMG).sendToTarget();
-            }
-        });
         initProgramTypeList();
         initHandler();
     }
@@ -91,10 +84,8 @@ public class MyCamera {
                 // TODO: 19-8-5 获取相机角度
                 if(width>height){
                     mPreviewSize=getPreferredPreviewSize(map.getOutputSizes(SurfaceTexture.class),width,height);
-                    mSurfaceTexture.setDefaultBufferSize(mPreviewSize.getWidth(),mPreviewSize.getHeight());
                 }else {
                     mPreviewSize=getPreferredPreviewSize(map.getOutputSizes(SurfaceTexture.class),height,width);
-                    mSurfaceTexture.setDefaultBufferSize(mPreviewSize.getHeight(),mPreviewSize.getWidth());
                     mPreviewSize=new Size(mPreviewSize.getHeight(),mPreviewSize.getWidth());
                     Log.d(TAG, "initCamera: new size="+mPreviewSize.toString());
                 }
@@ -211,8 +202,15 @@ public class MyCamera {
     }
 
     private void initOpenGL() {
-        mWindowSurface=new WindowSurface(mEglCore,mOutSurface,false);
         mWindowSurface.makeCurrent();
+        mSurfaceTexture=new SurfaceTexture(-1);
+        mSurfaceTexture.setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
+            @Override
+            public void onFrameAvailable(SurfaceTexture surfaceTexture) {
+                mOpenGLHandler.obtainMessage(MsgConfig.OPenGLMsg.MSG_UPDATE_IMG).sendToTarget();
+            }
+        });
+        mSurfaceTexture.setDefaultBufferSize(mPreviewSize.getWidth(),mPreviewSize.getHeight());
         setFrameRect(null);
         fpsCount=0;
         fpsTime=System.currentTimeMillis();

@@ -105,6 +105,7 @@ public class ShaderInfo {
                     "precision mediump float;\n" +
                     "varying vec2 vTextureCoord;\n" +
                     "uniform samplerExternalOES sTexture;\n" +
+                    "//uniform sampler2D sTexture;\n" +
                     "void main() {\n" +
                     "    vec4 tc = texture2D(sTexture, vTextureCoord);\n" +
                     "    float color = tc.r * 0.3 + tc.g * 0.59 + tc.b * 0.11;\n" +
@@ -181,4 +182,17 @@ public class ShaderInfo {
                     "    kernelValue6*cTemp6+kernelValue7*cTemp7+kernelValue8*cTemp8;\n" +
                     "    gl_FragColor=sum*scaleFactor;//进行亮度加权后将最终颜色传递给管线\n" +
                     "}\n";
+
+
+    public static final String FRAGMENT_SHADER_BW =
+            "#extension GL_OES_EGL_image_external : require\n" +
+                    "precision mediump float;\n" +
+                    "varying vec2 vTextureCoord;\n" +
+                    "uniform sampler2D sTexture;\n" +
+                    "void main() {\n" +
+                    "    vec4 tc = texture2D(sTexture, vTextureCoord);\n" +
+                    "    float color = tc.r * 0.3 + tc.g * 0.59 + tc.b * 0.11;\n" +
+                    "    gl_FragColor = vec4(color, color, color, 1.0);\n" +
+                    "}\n";
+
 }

@@ -6,6 +6,8 @@ import android.util.Log;
 
 import com.example.nyamori.gles.GlUtil;
 import com.example.nyamori.gles.ShaderInfo;
+import com.example.nyamori.mytestapplication.filters.InputFilter;
+import com.example.nyamori.mytestapplication.filters.OutputFliter;
 
 import java.nio.FloatBuffer;
 
@@ -43,6 +45,8 @@ public class My2DFilterManager {
     private int mTextureTarget;
 
 
+    private InputFilter inputFilter;
+    private OutputFliter outputFliter;
 
     private float[] mKernel = new float[ShaderInfo.KERNEL_SIZE];
     private float[] mTexOffset;
@@ -52,7 +56,6 @@ public class My2DFilterManager {
      * Prepares the program in the current EGL context.
      */
     public My2DFilterManager(ProgramType programType) {
-
         switch (programType) {
             case TEXTURE_EXT:
                 mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER, ShaderInfo.FRAGMENT_SHADER_EXT);
@@ -84,10 +87,8 @@ public class My2DFilterManager {
         if (mProgramHandle == 0) {
             throw new RuntimeException("Unable to create program");
         }
-
         mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
         // get locations of attributes and uniforms
-
         maPositionLoc = GLES20.glGetAttribLocation(mProgramHandle, "aPosition");
         GlUtil.checkLocation(maPositionLoc, "aPosition");
         maTextureCoordLoc = GLES20.glGetAttribLocation(mProgramHandle, "aTextureCoord");
@@ -112,6 +113,9 @@ public class My2DFilterManager {
             setKernel(new float[] {0f, 0f, 0f,  0f, 1f, 0f,  0f, 0f, 0f}, 0f);
             setTexSize(256, 256);
         }
+
+        inputFilter=new InputFilter(2048,2048);
+        outputFliter=new OutputFliter(1536,2048);
     }
 
     /**
@@ -139,7 +143,7 @@ public class My2DFilterManager {
         GLES20.glBindTexture(mTextureTarget, texId);
         GlUtil.checkGlError("glBindTexture " + texId);
 
-        setTexParameterOfTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES);
+        setTexParameterOfTexture(mTextureTarget);
 
         innerTexture();
         return texId;
@@ -239,9 +243,7 @@ public class My2DFilterManager {
      * E/Adreno-GSL: <gsl_memory_alloc_pure:2236>: GSL MEM ERROR: kgsl_sharedmem_alloc ioctl failed.
      * W/Adreno-GSL: <sharedmem_gpuobj_alloc:2436>: sharedmem_gpumem_alloc: mmap failed errno 12 Out of memory
      */
-    public void onDraw(FloatBuffer vertexBuffer, int firstVertex,
-                       int vertexCount, int coordsPerVertex, int vertexStride,
-                       float[] texMatrix, FloatBuffer texBuffer,int texStride){
+    public void onDraw( int firstVertex, float[] texMatrix, FloatBuffer texBuffer){
         // Copy the model / view / projection matrix over.
         GLES20.glUniformMatrix4fv(muMVPMatrixLoc, 1, false, GlUtil.IDENTITY_MATRIX, 0);
         GlUtil.checkGlError("glUniformMatrix4fv");
@@ -252,18 +254,20 @@ public class My2DFilterManager {
         GLES20.glEnableVertexAttribArray(maPositionLoc);
         GlUtil.checkGlError("glEnableVertexAttribArray");
         // Connect vertexBuffer to "aPosition".
-        GLES20.glVertexAttribPointer(maPositionLoc, coordsPerVertex,
-                GLES20.GL_FLOAT, false, vertexStride, vertexBuffer);
+        GLES20.glVertexAttribPointer(maPositionLoc, MyFrameRect.getmCoordsPerVertex(),
+                GLES20.GL_FLOAT, false,
+                MyFrameRect.getmVertexStride(),
+                MyFrameRect.getFullRectangleBuf());
         GlUtil.checkGlError("glVertexAttribPointer");
         // Enable the "aTextureCoord" vertex attribute.
         GLES20.glEnableVertexAttribArray(maTextureCoordLoc);
         GlUtil.checkGlError("glEnableVertexAttribArray");
         // Connect texBuffer to "aTextureCoord".
         GLES20.glVertexAttribPointer(maTextureCoordLoc, 2,
-                GLES20.GL_FLOAT, false, texStride, texBuffer);
+                GLES20.GL_FLOAT, false, MyFrameRect.getmTexCoordStride(), texBuffer);
         GlUtil.checkGlError("glVertexAttribPointer");
         // Draw the rect.
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, firstVertex, vertexCount);
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, firstVertex,MyFrameRect.getmVertexCount());
         GlUtil.checkGlError("glDrawArrays");
 
         // Done -- disable vertex array
@@ -271,22 +275,9 @@ public class My2DFilterManager {
         GLES20.glDisableVertexAttribArray(maTextureCoordLoc);
     }
 
-    /**
-     * Issues the draw call.  Does the full setup on every call.
-     * @param vertexBuffer Buffer with vertex position data.
-     * @param firstVertex Index of first vertex to use in vertexBuffer.
-     * @param vertexCount Number of vertices in vertexBuffer.
-     * @param coordsPerVertex The number of coordinates per vertex (e.g. x,y is 2).
-     * @param vertexStride Width, in bytes, of the position data for each vertex (often
-     *        vertexCount * sizeof(float)).
-     * @param texMatrix A 4x4 transformation matrix for texture coords.  (Primarily intended
-     *        for use with SurfaceTexture.)
-     * @param texBuffer Buffer with vertex texture data.
-     * @param texStride Width, in bytes, of the texture data for each vertex.
-     */
-    public void draw(FloatBuffer vertexBuffer, int firstVertex,
-                     int vertexCount, int coordsPerVertex, int vertexStride,
-                     float[] texMatrix, FloatBuffer texBuffer, int textureId, int texStride) {
+
+    public void draw(float[] texMatrix, int textureId) {
+        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         GLES20.glViewport(0,0,2048,2048);
         GlUtil.checkGlError("draw start");
         //绑定FBO
@@ -304,7 +295,7 @@ public class My2DFilterManager {
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(mTextureTarget, textureId);
 
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0]);
 
         // Populate the convolution kernel, if present.
@@ -313,35 +304,19 @@ public class My2DFilterManager {
             GLES20.glUniform2fv(muTexOffsetLoc, ShaderInfo.KERNEL_SIZE, mTexOffset, 0);
             GLES20.glUniform1f(muColorAdjustLoc, mColorAdjust);
         }
-        onDraw(vertexBuffer,firstVertex,vertexCount,
-                coordsPerVertex,vertexStride,
-                texMatrix,MyFrameRect.getFullRectangleTexRotate90Buf(),texStride);
+        onDraw(0, texMatrix, MyFrameRect.getFullRectangleTexRotate90Buf());
 
         // Done -- disable frame, texture, and program.
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
         GLES20.glBindTexture(mTextureTarget, 0);
         GLES20.glUseProgram(0);
 
-        //接下来把frame的数据渲染到屏幕上
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
+        int preTexture=textures[0];
 
-        GLES20.glViewport(0,0,1536,2048);
-        clearScreen();
 
-        int program=GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_2D);
-        GLES20.glUseProgram(program);
-        GlUtil.checkGlError("glUseProgram");
+//        inputFilter.draw(textureId,texMatrix);
+//        int preTexture=inputFilter.getTexture();
 
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0]);
-
-        onDraw(vertexBuffer,firstVertex,vertexCount,
-                coordsPerVertex,vertexStride,
-                texMatrix,texBuffer,texStride);
-
-        // Done -- disable frame, texture, and program.
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
-        GLES20.glBindTexture(mTextureTarget, 0);
-        GLES20.glUseProgram(0);
+        outputFliter.draw(preTexture,texMatrix);
     }
 }

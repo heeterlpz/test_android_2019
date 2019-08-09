@@ -41,20 +41,19 @@ public class MyFrameRect {
 
     private FloatBuffer mVertexArray;
     private FloatBuffer mTexCoordArray;
-    private int mVertexCount;
-    private int mCoordsPerVertex;
-    private int mVertexStride;
-    private int mTexCoordStride;
+
+
+    private static int mCoordsPerVertex=2;
+    private static int mVertexCount=FULL_RECTANGLE_COORDS.length / mCoordsPerVertex;
+    private static int mVertexStride=mCoordsPerVertex*SIZEOF_FLOAT;
+    private static int mTexCoordStride=2 * SIZEOF_FLOAT;
 
 
     public MyFrameRect(My2DFilterManager program) {
         mProgram = program;
+
         mVertexArray = FULL_RECTANGLE_BUF;
         mTexCoordArray = FULL_RECTANGLE_TEX_BUF;
-        mCoordsPerVertex = 2;
-        mVertexStride = mCoordsPerVertex * SIZEOF_FLOAT;
-        mVertexCount = FULL_RECTANGLE_COORDS.length / mCoordsPerVertex;
-        mTexCoordStride = 2 * SIZEOF_FLOAT;
     }
 
     /**
@@ -79,9 +78,7 @@ public class MyFrameRect {
      */
     public void drawFrame(int textureId, float[] texMatrix) {
         // Use the identity matrix for MVP so our 2x2 FULL_RECTANGLE covers the viewport.
-        mProgram.draw(mVertexArray, 0, mVertexCount,
-                mCoordsPerVertex, mVertexStride, texMatrix,
-                mTexCoordArray, textureId, mTexCoordStride);
+        mProgram.draw(texMatrix, textureId);
     }
 
     public static FloatBuffer getFullRectangleBuf() {
@@ -96,7 +93,19 @@ public class MyFrameRect {
         return FULL_RECTANGLE_TEX_ROTATE_90_BUF;
     }
 
-    public int getmCoordsPerVertex() {
+    public static int getmCoordsPerVertex() {
         return mCoordsPerVertex;
+    }
+
+    public static int getmTexCoordStride() {
+        return mTexCoordStride;
+    }
+
+    public static int getmVertexCount() {
+        return mVertexCount;
+    }
+
+    public static int getmVertexStride() {
+        return mVertexStride;
     }
 }
