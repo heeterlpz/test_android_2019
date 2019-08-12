@@ -107,13 +107,12 @@ public class MyCamera {
         if(mSurfaceTexture!=null){
             mSurfaceTexture.release();
         }
+        if(my2DFilterManager!=null){
+            my2DFilterManager.release();
+        }
         if(mEglCore!=null){
             mEglCore.release();
         }
-    }
-
-    public void changeCameraType(My2DFilterManager.ProgramType programType){
-        changeCameraType(programType,MsgConfig.MsgArg.NO_ARG);
     }
 
     public void changeCameraType(My2DFilterManager.ProgramType programType, int arg){
@@ -169,16 +168,12 @@ public class MyCamera {
             case MsgConfig.MsgArg.NO_ARG:
                 break;
             case MsgConfig.MsgArg.OBSCURE_TYPE:
-                my2DFilterManager.setKernel(new float[] {0.05f, 0.1f, 0.05f,  0.1f, 0.4f, 0.1f,  0.05f, 0.1f, 0.05f}, 0f);
                 break;
             case MsgConfig.MsgArg.SHARPENING_TYPE:
-                my2DFilterManager.setKernel(new float[] {0f, -1f, 0f,  -1f, 5f, -1f,  0f, -1f, 0f}, 0f);
                 break;
             case MsgConfig.MsgArg.EDGE_TYPE:
-                my2DFilterManager.setKernel(new float[] {0f, 1f, 0f,  1f, -4f, 1f,  0f, 1f, 0f}, 0f);
                 break;
             case MsgConfig.MsgArg.EMBOSS_TYPE:
-                my2DFilterManager.setKernel(new float[] {-2f, -1f, 0f,  -1f, 1f, 1f,  0f, 1f, 2f}, 0f);
                 break;
             default:
                 break;

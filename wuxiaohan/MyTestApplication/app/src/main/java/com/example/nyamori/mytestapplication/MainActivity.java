@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
                                 case R.id.nav_ext:
                                     myCamera.addFilter(MsgConfig.MsgArg.NO_ARG);
                                     break;
-                                case R.id.nav_ext_bw:
+                                case R.id.nav_bw:
                                     myCamera.addFilter(MsgConfig.MsgArg.BW_TYPE);
                                     break;
                                 case R.id.nav_mosaic:
@@ -78,13 +78,13 @@ public class MainActivity extends AppCompatActivity {
                                     myCamera.addFilter(MsgConfig.MsgArg.OBSCURE_TYPE);
                                     break;
                                 case R.id.nav_sharpening:
-                                    myCamera.changeCameraType(My2DFilterManager.ProgramType.TEXTURE_EXT_FILT, MsgConfig.MsgArg.SHARPENING_TYPE);
+                                    myCamera.addFilter(MsgConfig.MsgArg.SHARPENING_TYPE);
                                     break;
                                 case R.id.nav_edge:
-                                    myCamera.changeCameraType(My2DFilterManager.ProgramType.TEXTURE_EXT_FILT, MsgConfig.MsgArg.EDGE_TYPE);
+                                    myCamera.addFilter(MsgConfig.MsgArg.EDGE_TYPE);
                                     break;
                                 case R.id.nav_emboss:
-                                    myCamera.changeCameraType(My2DFilterManager.ProgramType.TEXTURE_EXT_FILT, MsgConfig.MsgArg.EMBOSS_TYPE);
+                                    myCamera.addFilter(MsgConfig.MsgArg.EMBOSS_TYPE);
                                     break;
                                 default:
                                     break;

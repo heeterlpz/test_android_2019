@@ -48,62 +48,6 @@ public class My2DFilterManager {
     private float mColorAdjust;
 
     public My2DFilterManager(int width,int height) {
-//        switch (programType) {
-//            case TEXTURE_EXT:
-//                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER, ShaderInfo.FRAGMENT_SHADER_EXT);
-//                break;
-//            case TEXTURE_DIV_UD:
-//                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_DIV_UD);
-//                break;
-//            case TEXTURE_SPLIT:
-//                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SPLIT);
-//                break;
-//            case TEXTURE_MOSAIC:
-//                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_MOSAIC);
-//                break;
-//            case TEXTURE_SMOOTH:
-//                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SMOOTH);
-//                break;
-//            case TEXTURE_EXT_BW:
-//                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_EXT_BW);
-//                break;
-//            case TEXTURE_EXT_FILT:
-//                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_FILT);
-//                break;
-//            case TEXTURE_EXT_HP:
-//                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_EXT_HP);
-//                break;
-//            default:
-//                throw new RuntimeException("Unhandled type " + programType);
-//        }
-//        if (mProgramHandle == 0) {
-//            throw new RuntimeException("Unable to create program");
-//        }
-//        // get locations of attributes and uniforms
-//        maPositionLoc = GLES20.glGetAttribLocation(mProgramHandle, "aPosition");
-//        GlUtil.checkLocation(maPositionLoc, "aPosition");
-//        maTextureCoordLoc = GLES20.glGetAttribLocation(mProgramHandle, "aTextureCoord");
-//        GlUtil.checkLocation(maTextureCoordLoc, "aTextureCoord");
-//        muMVPMatrixLoc = GLES20.glGetUniformLocation(mProgramHandle, "uMVPMatrix");
-//        GlUtil.checkLocation(muMVPMatrixLoc, "uMVPMatrix");
-//        muTexMatrixLoc = GLES20.glGetUniformLocation(mProgramHandle, "uTexMatrix");
-//        GlUtil.checkLocation(muTexMatrixLoc, "uTexMatrix");
-//        muKernelLoc = GLES20.glGetUniformLocation(mProgramHandle, "uKernel");
-//        if (muKernelLoc < 0) {
-//            // no kernel in this one
-//            muKernelLoc = -1;
-//            muTexOffsetLoc = -1;
-//            muColorAdjustLoc = -1;
-//        } else {
-//            // has kernel, must also have tex offset and color adj
-//            muTexOffsetLoc = GLES20.glGetUniformLocation(mProgramHandle, "uTexOffset");
-//            GlUtil.checkLocation(muTexOffsetLoc, "uTexOffset");
-//            muColorAdjustLoc = GLES20.glGetUniformLocation(mProgramHandle, "uColorAdjust");
-//            GlUtil.checkLocation(muColorAdjustLoc, "uColorAdjust");
-//            // initialize default values
-//            setKernel(new float[] {0f, 0f, 0f,  0f, 1f, 0f,  0f, 0f, 0f}, 0f);
-//            setTexSize(256, 256);
-//        }
         this.width=width;
         this.height=height;
         filterList=new ArrayList<>();
@@ -136,10 +80,16 @@ public class My2DFilterManager {
                 filterList.add(obscureFilter);
                 break;
             case MsgConfig.MsgArg.SHARPENING_TYPE:
+                SharpeningFilter sharpeningFilter=new SharpeningFilter(width,height);
+                filterList.add(sharpeningFilter);
                 break;
             case MsgConfig.MsgArg.EDGE_TYPE:
+                EdgeFilter edgeFilter=new EdgeFilter(width,height);
+                filterList.add(edgeFilter);
                 break;
             case MsgConfig.MsgArg.EMBOSS_TYPE:
+                EmbossFilter embossFilter=new EmbossFilter(width,height);
+                filterList.add(embossFilter);
                 break;
             case MsgConfig.MsgArg.BW_TYPE:
                 BWFilter bwFilter=new BWFilter(width,height);

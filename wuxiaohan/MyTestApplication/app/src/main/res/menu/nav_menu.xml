@@ -5,7 +5,7 @@
             android:id="@+id/nav_ext"
             android:title="原图"/>
         <item
-            android:id="@+id/nav_ext_bw"
+            android:id="@+id/nav_bw"
             android:title="黑白"/>
         <item
             android:id="@+id/nav_mosaic"
@@ -16,15 +16,15 @@
 
         <item
             android:id="@+id/nav_obscure"
-            android:title="OBSCURE"/>
+            android:title="高斯"/>
         <item
             android:id="@+id/nav_sharpening"
-            android:title="SHARPENING"/>
+            android:title="锐化"/>
         <item
             android:id="@+id/nav_edge"
-            android:title="EDGE"/>
+            android:title="边缘"/>
         <item
             android:id="@+id/nav_emboss"
-            android:title="EMBOSS"/>
+            android:title="浮雕"/>
     </group>
 </menu>
