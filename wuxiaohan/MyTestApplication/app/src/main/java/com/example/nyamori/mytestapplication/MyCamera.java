@@ -10,7 +10,6 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
-import android.opengl.GLES20;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
@@ -22,7 +21,6 @@ import android.view.Surface;
 import android.widget.Toast;
 
 import com.example.nyamori.gles.EglCore;
-import com.example.nyamori.gles.OffscreenSurface;
 import com.example.nyamori.gles.WindowSurface;
 
 import java.util.ArrayList;
@@ -59,9 +57,8 @@ public class MyCamera {
     private Handler mUIHandler;
     private Context mContext;
 
-    private int programTypeID=0;
     private List<My2DFilterManager.ProgramType> programTypeList;
-    private MyFrameRect myFrameRect;
+    private My2DFilterManager my2DFilterManager;
 
     public MyCamera(Handler mUIHandler,Surface mOutSurface,Context context){
         this.mUIHandler=mUIHandler;
@@ -121,9 +118,12 @@ public class MyCamera {
 
     public void changeCameraType(My2DFilterManager.ProgramType programType, int arg){
         if(programTypeList.contains(programType)){
-            programTypeID=programTypeList.indexOf(programType);
             mOpenGLHandler.obtainMessage(MsgConfig.OPenGLMsg.MSG_CHANGE_TYPE,arg,0).sendToTarget();
         }
+    }
+
+    public void addFilter(int programType){
+        mOpenGLHandler.obtainMessage(MsgConfig.OPenGLMsg.MSG_ADD_FILTER,programType,0).sendToTarget();
     }
 
     private void initProgramTypeList() {
@@ -155,41 +155,42 @@ public class MyCamera {
                     case MsgConfig.OPenGLMsg.MSG_CHANGE_TYPE:
                         changeType(msg.arg1);
                         break;
+                    case MsgConfig.OPenGLMsg.MSG_ADD_FILTER:
+                        Log.d(TAG, "handleMessage: add filter");
+                        my2DFilterManager.addFilter(msg.arg1);
+                        break;
                 }
             }
         };
     }
 
     private void changeType(int code) {
-        My2DFilterManager texture2dProgram=new My2DFilterManager(programTypeList.get(programTypeID));
         switch (code){
             case MsgConfig.MsgArg.NO_ARG:
                 break;
             case MsgConfig.MsgArg.OBSCURE_TYPE:
-                texture2dProgram.setKernel(new float[] {0.05f, 0.1f, 0.05f,  0.1f, 0.4f, 0.1f,  0.05f, 0.1f, 0.05f}, 0f);
+                my2DFilterManager.setKernel(new float[] {0.05f, 0.1f, 0.05f,  0.1f, 0.4f, 0.1f,  0.05f, 0.1f, 0.05f}, 0f);
                 break;
             case MsgConfig.MsgArg.SHARPENING_TYPE:
-                texture2dProgram.setKernel(new float[] {0f, -1f, 0f,  -1f, 5f, -1f,  0f, -1f, 0f}, 0f);
+                my2DFilterManager.setKernel(new float[] {0f, -1f, 0f,  -1f, 5f, -1f,  0f, -1f, 0f}, 0f);
                 break;
             case MsgConfig.MsgArg.EDGE_TYPE:
-                texture2dProgram.setKernel(new float[] {0f, 1f, 0f,  1f, -4f, 1f,  0f, 1f, 0f}, 0f);
+                my2DFilterManager.setKernel(new float[] {0f, 1f, 0f,  1f, -4f, 1f,  0f, 1f, 0f}, 0f);
                 break;
             case MsgConfig.MsgArg.EMBOSS_TYPE:
-                texture2dProgram.setKernel(new float[] {-2f, -1f, 0f,  -1f, 1f, 1f,  0f, 1f, 2f}, 0f);
+                my2DFilterManager.setKernel(new float[] {-2f, -1f, 0f,  -1f, 1f, 1f,  0f, 1f, 2f}, 0f);
                 break;
             default:
                 break;
         }
-        setFrameRect(texture2dProgram);
     }
 
 
     private void updateImg() {
         mSurfaceTexture.updateTexImage();//更新了信息
         mSurfaceTexture.getTransformMatrix(mMatrix);
-
         //设置了view的大小和起始坐标
-        myFrameRect.drawFrame(mTextureID,mMatrix);
+        my2DFilterManager.draw(mMatrix,mTextureID);
         mWindowSurface.swapBuffers();
 
         fpsCount++;
@@ -211,20 +212,15 @@ public class MyCamera {
             }
         });
         mSurfaceTexture.setDefaultBufferSize(mPreviewSize.getWidth(),mPreviewSize.getHeight());
-        setFrameRect(null);
+        setInputTexture();
         fpsCount=0;
         fpsTime=System.currentTimeMillis();
         openCamera();
     }
 
-    private void setFrameRect(My2DFilterManager my2DFilterManager){
-        if(my2DFilterManager ==null) my2DFilterManager =new My2DFilterManager(programTypeList.get(programTypeID));
-        if(myFrameRect==null){
-            myFrameRect=new MyFrameRect(my2DFilterManager);
-        }else {
-            myFrameRect.changeProgram(my2DFilterManager);
-        }
-        mTextureID=myFrameRect.createTextureObject();
+    private void setInputTexture(){
+        if(my2DFilterManager ==null) my2DFilterManager =new My2DFilterManager(mPreviewSize.getWidth(),mPreviewSize.getHeight());
+        mTextureID=my2DFilterManager.createInputTextureObject();
         mSurfaceTexture.detachFromGLContext();
         mSurfaceTexture.attachToGLContext(mTextureID);
     }

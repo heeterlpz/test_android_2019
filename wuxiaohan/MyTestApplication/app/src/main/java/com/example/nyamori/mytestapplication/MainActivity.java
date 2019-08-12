@@ -63,19 +63,19 @@ public class MainActivity extends AppCompatActivity {
                         }else {
                             switch (item.getItemId()){
                                 case R.id.nav_ext:
-                                    myCamera.changeCameraType(My2DFilterManager.ProgramType.TEXTURE_EXT_HP);
+                                    myCamera.addFilter(MsgConfig.MsgArg.NO_ARG);
                                     break;
                                 case R.id.nav_ext_bw:
-                                    myCamera.changeCameraType(My2DFilterManager.ProgramType.TEXTURE_EXT_BW);
+                                    myCamera.addFilter(MsgConfig.MsgArg.BW_TYPE);
                                     break;
                                 case R.id.nav_mosaic:
-                                    myCamera.changeCameraType(My2DFilterManager.ProgramType.TEXTURE_MOSAIC);
+                                    myCamera.addFilter(MsgConfig.MsgArg.MOSAIC_TYPE);
                                     break;
                                 case R.id.nav_smooth:
-                                    myCamera.changeCameraType(My2DFilterManager.ProgramType.TEXTURE_SMOOTH);
+                                    myCamera.addFilter(MsgConfig.MsgArg.SMOOTH_TYPE);
                                     break;
                                 case R.id.nav_obscure:
-                                    myCamera.changeCameraType(My2DFilterManager.ProgramType.TEXTURE_EXT_FILT, MsgConfig.MsgArg.OBSCURE_TYPE);
+                                    myCamera.addFilter(MsgConfig.MsgArg.OBSCURE_TYPE);
                                     break;
                                 case R.id.nav_sharpening:
                                     myCamera.changeCameraType(My2DFilterManager.ProgramType.TEXTURE_EXT_FILT, MsgConfig.MsgArg.SHARPENING_TYPE);

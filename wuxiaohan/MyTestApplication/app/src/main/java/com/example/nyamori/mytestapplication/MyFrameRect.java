@@ -15,14 +15,14 @@ public class MyFrameRect {
     private static final float[] FULL_RECTANGLE_COORDS = {
             -1.0f, -1.0f,   // 0 bottom left
             1.0f, -1.0f,   // 1 bottom right
-            -1.0f, 1.0f,   // 2 top left
-            1.0f, 1.0f,   // 3 top right
+            -1.0f,  1.0f,   // 2 top left
+            1.0f,  1.0f,   // 3 top right
     };
     private static final float[] FULL_RECTANGLE_TEX_COORDS = {
             0.0f, 0.0f,     // 0 bottom left
             1.0f, 0.0f,     // 1 bottom right
             0.0f, 1.0f,     // 2 top left
-            1.0f, 1.0f,      // 3 top right
+            1.0f, 1.0f      // 3 top right
     };
 
     private static final float[] FULL_RECTANGLE_TEX_COORDS_ROTATE_90={
@@ -39,47 +39,11 @@ public class MyFrameRect {
     private static final FloatBuffer FULL_RECTANGLE_TEX_ROTATE_90_BUF=
             GlUtil.createFloatBuffer(FULL_RECTANGLE_TEX_COORDS_ROTATE_90);
 
-    private FloatBuffer mVertexArray;
-    private FloatBuffer mTexCoordArray;
-
-
     private static int mCoordsPerVertex=2;
     private static int mVertexCount=FULL_RECTANGLE_COORDS.length / mCoordsPerVertex;
     private static int mVertexStride=mCoordsPerVertex*SIZEOF_FLOAT;
     private static int mTexCoordStride=2 * SIZEOF_FLOAT;
 
-
-    public MyFrameRect(My2DFilterManager program) {
-        mProgram = program;
-
-        mVertexArray = FULL_RECTANGLE_BUF;
-        mTexCoordArray = FULL_RECTANGLE_TEX_BUF;
-    }
-
-    /**
-     * Changes the program.  The previous program will be released.
-     * <p>
-     * The appropriate EGL context must be current.
-     */
-    public void changeProgram(My2DFilterManager program) {
-        mProgram.release();
-        mProgram = program;
-    }
-
-    /**
-     *接收外部纹理的输入的texture
-     */
-    public int createTextureObject() {
-        return mProgram.createInputTextureObject();
-    }
-
-    /**
-     * Draws a viewport-filling rect, texturing it with the specified texture object.
-     */
-    public void drawFrame(int textureId, float[] texMatrix) {
-        // Use the identity matrix for MVP so our 2x2 FULL_RECTANGLE covers the viewport.
-        mProgram.draw(texMatrix, textureId);
-    }
 
     public static FloatBuffer getFullRectangleBuf() {
         return FULL_RECTANGLE_BUF;
@@ -93,19 +57,19 @@ public class MyFrameRect {
         return FULL_RECTANGLE_TEX_ROTATE_90_BUF;
     }
 
-    public static int getmCoordsPerVertex() {
+    public static int getCoordsPerVertex() {
         return mCoordsPerVertex;
     }
 
-    public static int getmTexCoordStride() {
+    public static int getTexCoordStride() {
         return mTexCoordStride;
     }
 
-    public static int getmVertexCount() {
+    public static int getVertexCount() {
         return mVertexCount;
     }
 
-    public static int getmVertexStride() {
+    public static int getVertexStride() {
         return mVertexStride;
     }
 }

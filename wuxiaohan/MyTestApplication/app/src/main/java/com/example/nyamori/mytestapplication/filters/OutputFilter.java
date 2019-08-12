@@ -1,6 +1,7 @@
 package com.example.nyamori.mytestapplication.filters;
 
 import android.opengl.GLES20;
+import android.util.Log;
 
 import com.example.nyamori.gles.GlUtil;
 import com.example.nyamori.gles.ShaderInfo;
@@ -28,6 +29,7 @@ public class OutputFilter extends BaseFilter {
 
     @Override
     public void setTexture(int preTexture) {
+        Log.v(TAG, "setTexture: output texture="+preTexture);
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, preTexture);
     }

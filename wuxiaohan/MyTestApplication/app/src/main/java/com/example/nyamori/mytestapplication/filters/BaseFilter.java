@@ -1,6 +1,5 @@
 package com.example.nyamori.mytestapplication.filters;
 
-import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.util.Log;
 
@@ -115,10 +114,10 @@ public class BaseFilter {
     public void initRect(){
         vertexBuffer=MyFrameRect.getFullRectangleBuf();
         texBuffer=MyFrameRect.getFullRectangleTexBuf();
-        vertexCount=MyFrameRect.getmVertexCount();
-        coordsPerVertex=MyFrameRect.getmCoordsPerVertex();
-        vertexStride=MyFrameRect.getmVertexStride();
-        texStride=MyFrameRect.getmTexCoordStride();
+        vertexCount=MyFrameRect.getVertexCount();
+        coordsPerVertex=MyFrameRect.getCoordsPerVertex();
+        vertexStride=MyFrameRect.getVertexStride();
+        texStride=MyFrameRect.getTexCoordStride();
     }
 
     public void draw(int preTexture,float[] texMatrix){
@@ -145,11 +144,11 @@ public class BaseFilter {
     }
 
     public void setTexture(int preTexture){
+        Log.v(TAG, "setTexture: pre="+preTexture+" now="+myTexture[0]);
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, preTexture);
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, myTexture[0]);
-    //    GLES20.glUniform1i(myTexture[0],0);
     }
 
     public void setUniform(){

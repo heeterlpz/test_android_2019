@@ -10,7 +10,7 @@ public class ShaderInfo {
                     "varying vec2 vTextureCoord;\n" +
                     "void main() {\n" +
                     "    gl_Position = uMVPMatrix * aPosition;\n" +
-                    "    vTextureCoord = (uTexMatrix * aTextureCoord).xy;\n" +
+                    "    vTextureCoord = (uTexMatrix *aTextureCoord).xy;\n" +
                     "}\n";
 
     // Simple fragment shader for use with "normal" 2D textures.
@@ -85,7 +85,7 @@ public class ShaderInfo {
                     "    gl_FragColor = texture2D(sTexture, uv);\n" +
                     "}\n";
 
-    public static final String FRAGMENT_MOSAIC =
+    public static final String FRAGMENT_SHADER_EXT_MOSAIC =
             "#extension GL_OES_EGL_image_external : require\n" +
                     "precision mediump float;\n" +
                     "varying vec2 vTextureCoord;\n" +
@@ -123,37 +123,27 @@ public class ShaderInfo {
     // - Bake the filter kernel into the shader, instead of passing it through a uniform
     //   array.  That, combined with loop unrolling, should reduce memory accesses.
     public static final int KERNEL_SIZE = 9;
-    public static final String FRAGMENT_SHADER_EXT_FILT =
-            "#extension GL_OES_EGL_image_external : require\n" +
+    public static final String FRAGMENT_SHADER_FILT =
                     "#define KERNEL_SIZE " + KERNEL_SIZE + "\n" +
                     "precision highp float;\n" +
                     "varying vec2 vTextureCoord;\n" +
-                    "uniform samplerExternalOES sTexture;\n" +
+                    "uniform sampler2D sTexture;\n" +
                     "uniform float uKernel[KERNEL_SIZE];\n" +
                     "uniform vec2 uTexOffset[KERNEL_SIZE];\n" +
-                    "uniform float uColorAdjust;\n" +
                     "void main() {\n" +
                     "    int i = 0;\n" +
                     "    vec4 sum = vec4(0.0);\n" +
-                    "    if (vTextureCoord.x < vTextureCoord.y-0.001) {\n" +
-                    "        for (i = 0; i < KERNEL_SIZE; i++) {\n" +
-                    "            vec4 texc = texture2D(sTexture, vTextureCoord + uTexOffset[i]);\n" +
-                    "            sum += texc * uKernel[i];\n" +
-                    "        }\n" +
-                    "    sum += uColorAdjust;\n" +
-                    "    } else if (vTextureCoord.x > vTextureCoord.y+0.001) {\n" +
-                    "        sum = texture2D(sTexture, vTextureCoord);\n" +
-                    "    } else {\n" +
-                    "        sum.r = 1.0;\n" +
+                    "    for (i = 0; i < KERNEL_SIZE; i++) {\n" +
+                    "       vec4 texc = texture2D(sTexture, vTextureCoord + uTexOffset[i]);\n" +
+                    "       sum += texc * uKernel[i];\n" +
                     "    }\n" +
                     "    gl_FragColor = sum;\n" +
                     "}\n";
 
     public static final String FRAGMENT_SMOOTH =
-            "#extension GL_OES_EGL_image_external : require\n" +
                     "precision mediump float;\n" +
                     "varying vec2 vTextureCoord;\n" +
-                    "uniform samplerExternalOES sTexture;\n" +
+                    "uniform sampler2D sTexture;\n" +
                     "void main() {\n" +
                     "    //给出卷积内核中各个元素对应像素相对于待处理像素的纹理坐标偏移量 3*3内核\n" +
                     "    vec2 offset0=vec2(-1.0,-1.0); vec2 offset1=vec2(0.0,-1.0); vec2 offset2=vec2(1.0,-1.0);\n" +
@@ -192,6 +182,19 @@ public class ShaderInfo {
                     "    vec4 tc = texture2D(sTexture, vTextureCoord);\n" +
                     "    float color = tc.r * 0.3 + tc.g * 0.59 + tc.b * 0.11;\n" +
                     "    gl_FragColor = vec4(color, color, color, 1.0);\n" +
+                    "}\n";
+
+    public static final String FRAGMENT_MOSAIC =
+                    "precision mediump float;\n" +
+                    "varying vec2 vTextureCoord;\n" +
+                    "uniform sampler2D sTexture;\n" +
+                    "void main() {\n" +
+                    "    vec2 uv  = vTextureCoord.xy;\n" +
+                    "    float dx = 0.02;\n" +
+                    "    float dy = 0.02;\n" +
+                    "    vec2 coord = vec2(dx * floor(uv.x / dx), dy * floor(uv.y / dy));\n" +
+                    "    vec3 tc = texture2D(sTexture, coord).xyz;\n" +
+                    "    gl_FragColor = vec4(tc, 1.0);\n" +
                     "}\n";
 
 }

@@ -6,28 +6,21 @@ import android.util.Log;
 
 import com.example.nyamori.gles.GlUtil;
 import com.example.nyamori.gles.ShaderInfo;
-import com.example.nyamori.mytestapplication.filters.BWFilter;
-import com.example.nyamori.mytestapplication.filters.InputFilter;
-import com.example.nyamori.mytestapplication.filters.OutputFilter;
+import com.example.nyamori.mytestapplication.filters.*;
 
 import java.nio.FloatBuffer;
-
+import java.util.ArrayList;
+import java.util.List;
 
 
 // TODO: 19-8-7 拆解出filter类,将类改造成滤镜管理
 
 public class My2DFilterManager {
     private static final String TAG = "My2DFilterManager";
-    private int[] myFrame=new int[1];
-    private int[] textures=new int[1];
-    private int[] fRender=new int[1];
 
     public enum ProgramType {
-        TEXTURE_EXT,//原图片
         TEXTURE_EXT_HP,//高清版
         TEXTURE_EXT_BW,//黑白滤镜
-        TEXTURE_DIV_UD,//切割-镜像处理
-        TEXTURE_SPLIT,//切割-九宫图
         TEXTURE_MOSAIC,//马赛克
         TEXTURE_EXT_FILT,//这是一个卷积滤镜
         TEXTURE_SMOOTH //平滑
@@ -43,153 +36,145 @@ public class My2DFilterManager {
     private int maPositionLoc;
     private int maTextureCoordLoc;
 
-    private int mTextureTarget;
-
+    private int width;
+    private int height;
 
     private InputFilter inputFilter;
     private OutputFilter outputFliter;
-    private BWFilter bwFilter;
+    private List<BaseFilter> filterList;
 
     private float[] mKernel = new float[ShaderInfo.KERNEL_SIZE];
     private float[] mTexOffset;
     private float mColorAdjust;
 
-    /**
-     * Prepares the program in the current EGL context.
-     */
-    public My2DFilterManager(ProgramType programType) {
-        switch (programType) {
-            case TEXTURE_EXT:
-                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER, ShaderInfo.FRAGMENT_SHADER_EXT);
-                break;
-            case TEXTURE_DIV_UD:
-                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_DIV_UD);
-                break;
-            case TEXTURE_SPLIT:
-                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SPLIT);
-                break;
-            case TEXTURE_MOSAIC:
-                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_MOSAIC);
-                break;
-            case TEXTURE_SMOOTH:
-                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SMOOTH);
-                break;
-            case TEXTURE_EXT_BW:
-                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_EXT_BW);
-                break;
-            case TEXTURE_EXT_FILT:
-                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_EXT_FILT);
-                break;
-            case TEXTURE_EXT_HP:
-                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_EXT_HP);
-                break;
-            default:
-                throw new RuntimeException("Unhandled type " + programType);
-        }
-        if (mProgramHandle == 0) {
-            throw new RuntimeException("Unable to create program");
-        }
-        mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
-        // get locations of attributes and uniforms
-        maPositionLoc = GLES20.glGetAttribLocation(mProgramHandle, "aPosition");
-        GlUtil.checkLocation(maPositionLoc, "aPosition");
-        maTextureCoordLoc = GLES20.glGetAttribLocation(mProgramHandle, "aTextureCoord");
-        GlUtil.checkLocation(maTextureCoordLoc, "aTextureCoord");
-        muMVPMatrixLoc = GLES20.glGetUniformLocation(mProgramHandle, "uMVPMatrix");
-        GlUtil.checkLocation(muMVPMatrixLoc, "uMVPMatrix");
-        muTexMatrixLoc = GLES20.glGetUniformLocation(mProgramHandle, "uTexMatrix");
-        GlUtil.checkLocation(muTexMatrixLoc, "uTexMatrix");
-        muKernelLoc = GLES20.glGetUniformLocation(mProgramHandle, "uKernel");
-        if (muKernelLoc < 0) {
-            // no kernel in this one
-            muKernelLoc = -1;
-            muTexOffsetLoc = -1;
-            muColorAdjustLoc = -1;
-        } else {
-            // has kernel, must also have tex offset and color adj
-            muTexOffsetLoc = GLES20.glGetUniformLocation(mProgramHandle, "uTexOffset");
-            GlUtil.checkLocation(muTexOffsetLoc, "uTexOffset");
-            muColorAdjustLoc = GLES20.glGetUniformLocation(mProgramHandle, "uColorAdjust");
-            GlUtil.checkLocation(muColorAdjustLoc, "uColorAdjust");
-            // initialize default values
-            setKernel(new float[] {0f, 0f, 0f,  0f, 1f, 0f,  0f, 0f, 0f}, 0f);
-            setTexSize(256, 256);
-        }
+    public My2DFilterManager(int width,int height) {
+//        switch (programType) {
+//            case TEXTURE_EXT:
+//                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER, ShaderInfo.FRAGMENT_SHADER_EXT);
+//                break;
+//            case TEXTURE_DIV_UD:
+//                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_DIV_UD);
+//                break;
+//            case TEXTURE_SPLIT:
+//                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SPLIT);
+//                break;
+//            case TEXTURE_MOSAIC:
+//                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_MOSAIC);
+//                break;
+//            case TEXTURE_SMOOTH:
+//                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SMOOTH);
+//                break;
+//            case TEXTURE_EXT_BW:
+//                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_EXT_BW);
+//                break;
+//            case TEXTURE_EXT_FILT:
+//                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_FILT);
+//                break;
+//            case TEXTURE_EXT_HP:
+//                mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_EXT_HP);
+//                break;
+//            default:
+//                throw new RuntimeException("Unhandled type " + programType);
+//        }
+//        if (mProgramHandle == 0) {
+//            throw new RuntimeException("Unable to create program");
+//        }
+//        // get locations of attributes and uniforms
+//        maPositionLoc = GLES20.glGetAttribLocation(mProgramHandle, "aPosition");
+//        GlUtil.checkLocation(maPositionLoc, "aPosition");
+//        maTextureCoordLoc = GLES20.glGetAttribLocation(mProgramHandle, "aTextureCoord");
+//        GlUtil.checkLocation(maTextureCoordLoc, "aTextureCoord");
+//        muMVPMatrixLoc = GLES20.glGetUniformLocation(mProgramHandle, "uMVPMatrix");
+//        GlUtil.checkLocation(muMVPMatrixLoc, "uMVPMatrix");
+//        muTexMatrixLoc = GLES20.glGetUniformLocation(mProgramHandle, "uTexMatrix");
+//        GlUtil.checkLocation(muTexMatrixLoc, "uTexMatrix");
+//        muKernelLoc = GLES20.glGetUniformLocation(mProgramHandle, "uKernel");
+//        if (muKernelLoc < 0) {
+//            // no kernel in this one
+//            muKernelLoc = -1;
+//            muTexOffsetLoc = -1;
+//            muColorAdjustLoc = -1;
+//        } else {
+//            // has kernel, must also have tex offset and color adj
+//            muTexOffsetLoc = GLES20.glGetUniformLocation(mProgramHandle, "uTexOffset");
+//            GlUtil.checkLocation(muTexOffsetLoc, "uTexOffset");
+//            muColorAdjustLoc = GLES20.glGetUniformLocation(mProgramHandle, "uColorAdjust");
+//            GlUtil.checkLocation(muColorAdjustLoc, "uColorAdjust");
+//            // initialize default values
+//            setKernel(new float[] {0f, 0f, 0f,  0f, 1f, 0f,  0f, 0f, 0f}, 0f);
+//            setTexSize(256, 256);
+//        }
+        this.width=width;
+        this.height=height;
+        filterList=new ArrayList<>();
 
         inputFilter=new InputFilter(2048,2048);
         outputFliter=new OutputFilter(1536,2048);
-        bwFilter=new BWFilter(2048,2048);
     }
 
-    /**
-     * Releases the program.
-     * <p>
-     * The appropriate EGL context must be current (i.e. the one that was used to create
-     * the program).
-     */
     public void release() {
-        GLES20.glDeleteProgram(mProgramHandle);
-        mProgramHandle = -1;
+        releaseList();
+        inputFilter.release();
+        outputFliter.release();
     }
 
-    /**
-     * Creates a texture object suitable for use with this program.
-     * <p>
-     * On exit, the texture will be bound.
-     */
+    private void releaseList(){
+        for(BaseFilter filter:filterList){
+            filter.release();
+        }
+        filterList.clear();
+    }
+
+    public void addFilter(int typeCode){
+
+        switch (typeCode) {
+            case MsgConfig.MsgArg.NO_ARG:
+                releaseList();
+                break;
+            case MsgConfig.MsgArg.OBSCURE_TYPE:
+                ObscureFilter obscureFilter=new ObscureFilter(width,height);
+                filterList.add(obscureFilter);
+                break;
+            case MsgConfig.MsgArg.SHARPENING_TYPE:
+                break;
+            case MsgConfig.MsgArg.EDGE_TYPE:
+                break;
+            case MsgConfig.MsgArg.EMBOSS_TYPE:
+                break;
+            case MsgConfig.MsgArg.BW_TYPE:
+                BWFilter bwFilter=new BWFilter(width,height);
+                filterList.add(bwFilter);
+                break;
+            case MsgConfig.MsgArg.MOSAIC_TYPE:
+                MosaicFilter mosaicFilter=new MosaicFilter(width,height);
+                filterList.add(mosaicFilter);
+                break;
+            case MsgConfig.MsgArg.SMOOTH_TYPE:
+                SmoothFilter smoothFilter=new SmoothFilter(width,height);
+                filterList.add(smoothFilter);
+                break;
+            default:
+                throw new RuntimeException("Unhandled type ");
+        }
+
+        if(filterList.size()%2==0){
+            inputFilter.setTexBuffer(true);
+        }else {
+            inputFilter.setTexBuffer(false);
+        }
+    }
+
     public int createInputTextureObject() {
         int[] textures = new int[1];
         GLES20.glGenTextures(1, textures, 0);
         GlUtil.checkGlError("glGenTextures");
 
         int texId = textures[0];
-        GLES20.glBindTexture(mTextureTarget, texId);
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, texId);
         GlUtil.checkGlError("glBindTexture " + texId);
 
-        setTexParameterOfTexture(mTextureTarget);
-
-        innerTexture();
+        setTexParameterOfTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES);
         return texId;
-    }
-
-    /**
-     * 内部的2d纹理的textures
-     */
-    public void innerTexture(){
-        GLES20.glGenFramebuffers(1, myFrame, 0);
-        GLES20.glGenTextures(1, textures,0);
-        GlUtil.checkGlError("glGenTextures");
-
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,myFrame[0]);
-        GlUtil.checkGlError("glBindFramebuffer "+myFrame[0]);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0]);
-        GlUtil.checkGlError("glBindTexture " + textures[0]);
-
-        setTexParameterOfTexture(GLES20.GL_TEXTURE_2D);
-
-        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, 2048, 2048, 0,
-                GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null);
-        GlUtil.checkGlError("glTexImage2D");
-
-        GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER,GLES20.GL_COLOR_ATTACHMENT0,
-                GLES20.GL_TEXTURE_2D,textures[0],0);
-        GlUtil.checkGlError("glFramebufferTexture2D");
-
-        GLES20.glGenRenderbuffers(1,fRender,0);
-        GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER,fRender[0]);
-        GLES20.glRenderbufferStorage(GLES20.GL_RENDERBUFFER,GLES20.GL_DEPTH_COMPONENT16,
-                2048, 2048);
-        GLES20.glFramebufferRenderbuffer(GLES20.GL_FRAMEBUFFER, GLES20.GL_DEPTH_ATTACHMENT,
-                GLES20.GL_RENDERBUFFER, fRender[0]);
-        GlUtil.checkGlError("glFramebufferRenderbuffer");
-
-        if (GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER) != GLES20.GL_FRAMEBUFFER_COMPLETE) {
-            Log.e(TAG, "innerTexture: error init frame buffer="+GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER));
-        }
-
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,0);
-        GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER,0);
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
     }
 
     /**
@@ -206,20 +191,6 @@ public class My2DFilterManager {
         mColorAdjust = colorAdj;
     }
 
-    /**
-     * Sets the size of the texture.  This is used to find adjacent texels when filtering.
-     */
-    public void setTexSize(int width, int height) {
-        float rw = 1.0f / width;
-        float rh = 1.0f / height;
-
-        // Don't need to create a new array here, but it's syntactically convenient.
-        mTexOffset = new float[] {
-                -rw, -rh,   0f, -rh,    rw, -rh,
-                -rw, 0f,    0f, 0f,     rw, 0f,
-                -rw, rh,    0f, rh,     rw, rh
-        };
-    }
 
     public void setTexParameterOfTexture(int target){
         GLES20.glTexParameterf(target, GLES20.GL_TEXTURE_MIN_FILTER,
@@ -233,95 +204,18 @@ public class My2DFilterManager {
         GlUtil.checkGlError("glTexParameter");
     }
 
-    public void clearScreen(){
-        GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
-        GlUtil.checkGlError("glClearColor");
-    }
 
     // TODO: 19-8-9 继续拆解
 
-    /**
-     *偶发 报错如下
-     * E/Adreno-GSL: <gsl_memory_alloc_pure:2236>: GSL MEM ERROR: kgsl_sharedmem_alloc ioctl failed.
-     * W/Adreno-GSL: <sharedmem_gpuobj_alloc:2436>: sharedmem_gpumem_alloc: mmap failed errno 12 Out of memory
-     */
-    public void onDraw( int firstVertex, float[] texMatrix, FloatBuffer texBuffer){
-        // Copy the model / view / projection matrix over.
-        GLES20.glUniformMatrix4fv(muMVPMatrixLoc, 1, false, GlUtil.IDENTITY_MATRIX, 0);
-        GlUtil.checkGlError("glUniformMatrix4fv");
-        // Copy the texture transformation matrix over.
-        GLES20.glUniformMatrix4fv(muTexMatrixLoc, 1, false, texMatrix, 0);
-        GlUtil.checkGlError("glUniformMatrix4fv");
-        // Enable the "aPosition" vertex attribute.
-        GLES20.glEnableVertexAttribArray(maPositionLoc);
-        GlUtil.checkGlError("glEnableVertexAttribArray");
-        // Connect vertexBuffer to "aPosition".
-        GLES20.glVertexAttribPointer(maPositionLoc, MyFrameRect.getmCoordsPerVertex(),
-                GLES20.GL_FLOAT, false,
-                MyFrameRect.getmVertexStride(),
-                MyFrameRect.getFullRectangleBuf());
-        GlUtil.checkGlError("glVertexAttribPointer");
-        // Enable the "aTextureCoord" vertex attribute.
-        GLES20.glEnableVertexAttribArray(maTextureCoordLoc);
-        GlUtil.checkGlError("glEnableVertexAttribArray");
-        // Connect texBuffer to "aTextureCoord".
-        GLES20.glVertexAttribPointer(maTextureCoordLoc, 2,
-                GLES20.GL_FLOAT, false, MyFrameRect.getmTexCoordStride(), texBuffer);
-        GlUtil.checkGlError("glVertexAttribPointer");
-        // Draw the rect.
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, firstVertex,MyFrameRect.getmVertexCount());
-        GlUtil.checkGlError("glDrawArrays");
-
-        // Done -- disable vertex array
-        GLES20.glDisableVertexAttribArray(maPositionLoc);
-        GLES20.glDisableVertexAttribArray(maTextureCoordLoc);
-    }
-
-
     public void draw(float[] texMatrix, int textureId) {
-        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
-        GLES20.glViewport(0,0,2048,2048);
-        GlUtil.checkGlError("draw start");
-        //绑定FBO
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,myFrame[0]);
-        GlUtil.checkGlError("glBindFramebuffer");
-        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
-
-        clearScreen();
-
-        // Select the program.
-        GLES20.glUseProgram(mProgramHandle);
-        GlUtil.checkGlError("glUseProgram");
-
-        // Set the texture.
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-        GLES20.glBindTexture(mTextureTarget, textureId);
-
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0]);
-
-        // Populate the convolution kernel, if present.
-        if (muKernelLoc >= 0) {
-            GLES20.glUniform1fv(muKernelLoc, ShaderInfo.KERNEL_SIZE, mKernel, 0);
-            GLES20.glUniform2fv(muTexOffsetLoc, ShaderInfo.KERNEL_SIZE, mTexOffset, 0);
-            GLES20.glUniform1f(muColorAdjustLoc, mColorAdjust);
+        int preTexture=textureId;
+        //偶数次滤镜需要手动转90°，奇数次不用，这个设置写到addFilter和changeFilter
+        inputFilter.draw(preTexture,texMatrix);
+        preTexture=inputFilter.getTexture();
+        for(BaseFilter filter:filterList){
+            filter.draw(preTexture,texMatrix);
+            preTexture=filter.getTexture();
         }
-        onDraw(0, texMatrix, MyFrameRect.getFullRectangleTexRotate90Buf());
-
-        // Done -- disable frame, texture, and program.
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
-        GLES20.glBindTexture(mTextureTarget, 0);
-        GLES20.glUseProgram(0);
-
-        int preTexture=textures[0];
-
-
-//        inputFilter.draw(textureId,texMatrix);
-//        int preTexture=inputFilter.getTexture();
-
-//        bwFilter.draw(preTexture,texMatrix);
-//        preTexture=bwFilter.getTexture();
         outputFliter.draw(preTexture,texMatrix);
     }
 }
