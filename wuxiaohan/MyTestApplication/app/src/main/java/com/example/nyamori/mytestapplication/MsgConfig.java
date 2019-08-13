@@ -17,6 +17,7 @@ public  class MsgConfig {
         public static final int BW_TYPE=5;
         public static final int MOSAIC_TYPE=6;
         public static final int SMOOTH_TYPE=7;
+        public static final int BEAUTY_TYPE=8;
     }
 
     public static class UIMsg{

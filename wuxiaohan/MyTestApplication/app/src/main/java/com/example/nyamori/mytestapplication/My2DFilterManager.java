@@ -75,6 +75,10 @@ public class My2DFilterManager {
                 SmoothFilter smoothFilter=new SmoothFilter(width,height);
                 filterList.add(smoothFilter);
                 break;
+            case MsgConfig.MsgType.BEAUTY_TYPE:
+                BeautyFilter beautyFilter=new BeautyFilter(width,height);
+                filterList.add(beautyFilter);
+                break;
             default:
                 throw new RuntimeException("Unhandled type");
         }

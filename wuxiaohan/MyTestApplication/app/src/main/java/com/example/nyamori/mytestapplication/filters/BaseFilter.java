@@ -14,6 +14,8 @@ public class BaseFilter {
     protected final static String TAG="filter";
 
     protected static final int KERNEL_SIZE_SMALL = 9;
+    protected static final int KERNEL_SIZE_MEDIUM = 13;
+    protected static final int KERNEL_SIZE_BIG = 25;
 
     protected int mProgramHandle;
 
@@ -203,15 +205,15 @@ public class BaseFilter {
                 GLES20.GL_NEAREST);
         GLES20.glTexParameterf(target, GLES20.GL_TEXTURE_MAG_FILTER,
                 GLES20.GL_LINEAR);
-        GLES20.glTexParameteri(target, GLES20.GL_TEXTURE_WRAP_S,
+        GLES20.glTexParameterf(target, GLES20.GL_TEXTURE_WRAP_S,
                 GLES20.GL_CLAMP_TO_EDGE);
-        GLES20.glTexParameteri(target, GLES20.GL_TEXTURE_WRAP_T,
+        GLES20.glTexParameterf(target, GLES20.GL_TEXTURE_WRAP_T,
                 GLES20.GL_CLAMP_TO_EDGE);
         GlUtil.checkGlError("glTexParameter");
     }
 
     public void clearScreen(){
-        GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         GlUtil.checkGlError("glClearColor");
     }

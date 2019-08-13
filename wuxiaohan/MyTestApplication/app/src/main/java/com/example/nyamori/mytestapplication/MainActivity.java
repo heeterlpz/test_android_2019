@@ -87,6 +87,8 @@ public class MainActivity extends AppCompatActivity {
                                 case R.id.nav_emboss:
                                     myCamera.addFilter(MsgConfig.MsgType.EMBOSS_TYPE);
                                     break;
+                                case R.id.nav_test:
+                                    myCamera.addFilter(MsgConfig.MsgType.BEAUTY_TYPE);
                                 default:
                                     break;
                             }
