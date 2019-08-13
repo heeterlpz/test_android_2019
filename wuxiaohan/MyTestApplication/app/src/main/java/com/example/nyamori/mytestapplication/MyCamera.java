@@ -21,6 +21,7 @@ import android.view.Surface;
 import android.widget.Toast;
 
 import com.example.nyamori.gles.EglCore;
+import com.example.nyamori.gles.GlUtil;
 import com.example.nyamori.gles.WindowSurface;
 
 import java.util.ArrayList;
@@ -51,13 +52,12 @@ public class MyCamera {
     private long fpsTime;
 
     private int mTextureID=-1;
-    private int xStart=0;
-    private int yStart=0;
+    private int xStart;
+    private int yStart;
 
     private Handler mUIHandler;
     private Context mContext;
 
-    private List<My2DFilterManager.ProgramType> programTypeList;
     private My2DFilterManager my2DFilterManager;
 
     public MyCamera(Handler mUIHandler,Surface mOutSurface,Context context){
@@ -66,7 +66,6 @@ public class MyCamera {
         mEglCore=new EglCore(null,EglCore.FLAG_RECORDABLE);
         mWindowSurface=new WindowSurface(mEglCore,mOutSurface,false);
         mCameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
-        initProgramTypeList();
         initHandler();
     }
 
@@ -79,6 +78,8 @@ public class MyCamera {
                 if(facing!=null&&facing==CameraCharacteristics.LENS_FACING_FRONT)continue;
                 this.cameraID=cameraID;
                 // TODO: 19-8-5 获取相机角度
+
+                //获取预览尺寸
                 if(width>height){
                     mPreviewSize=getPreferredPreviewSize(map.getOutputSizes(SurfaceTexture.class),width,height);
                 }else {
@@ -86,9 +87,8 @@ public class MyCamera {
                     mPreviewSize=new Size(mPreviewSize.getHeight(),mPreviewSize.getWidth());
                     Log.d(TAG, "initCamera: new size="+mPreviewSize.toString());
                 }
-                xStart=(width-mPreviewSize.getWidth())/2;
-                Log.d(TAG, "initCamera: xstart="+xStart);
-                yStart=(height-mPreviewSize.getHeight());
+                xStart = (width - mPreviewSize.getWidth()) / 2;
+                yStart = (height - mPreviewSize.getHeight());
                 mOpenGLHandler.obtainMessage(MsgConfig.OPenGLMsg.MSG_INIT_OUT).sendToTarget();
             }
         } catch (CameraAccessException e) {
@@ -107,6 +107,10 @@ public class MyCamera {
         if(mSurfaceTexture!=null){
             mSurfaceTexture.release();
         }
+        if(mTextureID!=-1){
+            GlUtil.releaseTexture(mTextureID);
+            mTextureID=-1;
+        }
         if(my2DFilterManager!=null){
             my2DFilterManager.release();
         }
@@ -115,25 +119,14 @@ public class MyCamera {
         }
     }
 
-    public void changeCameraType(My2DFilterManager.ProgramType programType, int arg){
-        if(programTypeList.contains(programType)){
-            mOpenGLHandler.obtainMessage(MsgConfig.OPenGLMsg.MSG_CHANGE_TYPE,arg,0).sendToTarget();
-        }
+    public void changeCameraType(){
+
     }
 
     public void addFilter(int programType){
         mOpenGLHandler.obtainMessage(MsgConfig.OPenGLMsg.MSG_ADD_FILTER,programType,0).sendToTarget();
     }
 
-    private void initProgramTypeList() {
-        programTypeList=new ArrayList<>();
-        //目前支持的处理方式
-        programTypeList.add(My2DFilterManager.ProgramType.TEXTURE_EXT_HP);
-        programTypeList.add(My2DFilterManager.ProgramType.TEXTURE_EXT_BW);
-        programTypeList.add(My2DFilterManager.ProgramType.TEXTURE_MOSAIC);
-        programTypeList.add(My2DFilterManager.ProgramType.TEXTURE_SMOOTH);
-        programTypeList.add(My2DFilterManager.ProgramType.TEXTURE_EXT_FILT);
-    }
 
     private void initHandler() {
         HandlerThread handlerThreadCamera = new HandlerThread("Camera");
@@ -165,15 +158,15 @@ public class MyCamera {
 
     private void changeType(int code) {
         switch (code){
-            case MsgConfig.MsgArg.NO_ARG:
+            case MsgConfig.MsgType.NO_TYPE:
                 break;
-            case MsgConfig.MsgArg.OBSCURE_TYPE:
+            case MsgConfig.MsgType.OBSCURE_TYPE:
                 break;
-            case MsgConfig.MsgArg.SHARPENING_TYPE:
+            case MsgConfig.MsgType.SHARPENING_TYPE:
                 break;
-            case MsgConfig.MsgArg.EDGE_TYPE:
+            case MsgConfig.MsgType.EDGE_TYPE:
                 break;
-            case MsgConfig.MsgArg.EMBOSS_TYPE:
+            case MsgConfig.MsgType.EMBOSS_TYPE:
                 break;
             default:
                 break;
@@ -207,17 +200,13 @@ public class MyCamera {
             }
         });
         mSurfaceTexture.setDefaultBufferSize(mPreviewSize.getWidth(),mPreviewSize.getHeight());
-        setInputTexture();
-        fpsCount=0;
-        fpsTime=System.currentTimeMillis();
-        openCamera();
-    }
-
-    private void setInputTexture(){
-        if(my2DFilterManager ==null) my2DFilterManager =new My2DFilterManager(mPreviewSize.getWidth(),mPreviewSize.getHeight());
+        my2DFilterManager=new My2DFilterManager(mPreviewSize.getWidth(),mPreviewSize.getHeight(),xStart,yStart);
         mTextureID=my2DFilterManager.createInputTextureObject();
         mSurfaceTexture.detachFromGLContext();
         mSurfaceTexture.attachToGLContext(mTextureID);
+        fpsCount=0;
+        fpsTime=System.currentTimeMillis();
+        openCamera();
     }
 
     private void openCamera() {

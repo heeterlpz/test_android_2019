@@ -2,7 +2,6 @@ package com.example.nyamori.mytestapplication.filters;
 
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
-import android.util.Log;
 
 import com.example.nyamori.mytestapplication.MyFrameRect;
 
@@ -20,7 +19,6 @@ public class InputFilter extends BaseFilter {
 
     @Override
     public void setTexture(int preTexture) {
-        Log.v(TAG, "setTexture: input pre="+preTexture+" now="+myTexture[0]);
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, preTexture);
         GLES20.glActiveTexture(GLES20.GL_TEXTURE1);

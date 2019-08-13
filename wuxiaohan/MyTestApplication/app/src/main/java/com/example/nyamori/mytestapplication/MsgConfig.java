@@ -8,8 +8,8 @@ public  class MsgConfig {
         public static final int MSG_ADD_FILTER=3;
     }
 
-    public static class MsgArg{
-        public static final int NO_ARG=0;
+    public static class MsgType {
+        public static final int NO_TYPE =0;
         public static final int OBSCURE_TYPE=1;
         public static final int SHARPENING_TYPE=2;
         public static final int EDGE_TYPE=3;

@@ -4,14 +4,17 @@ import android.opengl.GLES20;
 import android.util.Log;
 
 import com.example.nyamori.gles.GlUtil;
-import com.example.nyamori.gles.ShaderInfo;
 import com.example.nyamori.mytestapplication.MyFrameRect;
+import com.example.nyamori.mytestapplication.R;
+import com.example.nyamori.mytestapplication.ShaderLoader;
 
 import java.nio.FloatBuffer;
 
-// TODO: 19-8-8 完成基础fliter类
 public class BaseFilter {
     protected final static String TAG="filter";
+
+    protected static final int KERNEL_SIZE_SMALL = 9;
+
     protected int mProgramHandle;
 
     protected int[] myFrame=new int[1];
@@ -33,13 +36,12 @@ public class BaseFilter {
     protected int vertexStride;
     protected int texStride;
 
+    protected float[] mTexOffset;
+
     public BaseFilter(){ }
 
     public BaseFilter(int width, int height){
-        mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_EXT_HP);
-        if (mProgramHandle == 0) {
-            throw new RuntimeException("Unable to create program");
-        }
+        mProgramHandle = ShaderLoader.getInstance().loadShader(R.raw.fragment_shader_ext);
         getLocation();
         chooseSize(width,height);
         createFrame();
@@ -56,9 +58,15 @@ public class BaseFilter {
     public int getTexture(){return myTexture[0];}
 
     public void chooseSize(int width,int height){
-        // TODO: 19-8-9 写选择长宽
-        this.width=2048;
-        this.height=2048;
+        this.width=judgeSize(width);
+        this.height=judgeSize(height);
+        Log.i(TAG, "chooseSize: width="+this.width+" height="+this.height);
+    }
+
+    public int judgeSize(int length) {
+        int i=256;
+        while (length>i)i=i*2;
+        return i;
     }
 
     public void createFrame() {
@@ -126,7 +134,7 @@ public class BaseFilter {
         setProgram();
         setTexture(preTexture);
         setUniform();
-        onDraw(0,texMatrix);
+        onDraw(texMatrix);
         unBindFrame();
     }
 
@@ -144,7 +152,6 @@ public class BaseFilter {
     }
 
     public void setTexture(int preTexture){
-        Log.v(TAG, "setTexture: pre="+preTexture+" now="+myTexture[0]);
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, preTexture);
         GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
@@ -155,8 +162,8 @@ public class BaseFilter {
 
     }
 
-    public void onDraw(int firstVertex, float[] texMatrix){
-        // Copy the model / view / projection matrix over.
+    public void onDraw(float[] texMatrix){
+        // Copy the model/view/projection matrix over.
         GLES20.glUniformMatrix4fv(muMVPMatrixLoc, 1, false, GlUtil.IDENTITY_MATRIX, 0);
         GlUtil.checkGlError("glUniformMatrix4fv");
         // Copy the texture transformation matrix over.
@@ -177,7 +184,7 @@ public class BaseFilter {
                 GLES20.GL_FLOAT, false, texStride, texBuffer);
         GlUtil.checkGlError("glVertexAttribPointer");
         // Draw the rect.
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, firstVertex,vertexCount);
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0,vertexCount);
         GlUtil.checkGlError("glDrawArrays");
         // Done -- disable vertex array
         GLES20.glDisableVertexAttribArray(maPositionLoc);
@@ -207,5 +214,20 @@ public class BaseFilter {
         GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         GlUtil.checkGlError("glClearColor");
+    }
+
+    /**
+     * Sets the size of the texture.  This is used to find adjacent texels when filtering.
+     */
+    public void setTexSize(int width, int height) {
+        float rw = 1.0f / width;
+        float rh = 1.0f / height;
+
+        // Don't need to create a new array here, but it's syntactically convenient.
+        mTexOffset = new float[] {
+                -rw, -rh,   0f, -rh,    rw, -rh,
+                -rw, 0f,    0f, 0f,     rw, 0f,
+                -rw, rh,    0f, rh,     rw, rh
+        };
     }
 }

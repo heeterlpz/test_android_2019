@@ -46,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
         }else {
             initDrawer();
             initSurfaceView();
+            ShaderLoader.getInstance(this);
         }
     }
 
@@ -63,28 +64,28 @@ public class MainActivity extends AppCompatActivity {
                         }else {
                             switch (item.getItemId()){
                                 case R.id.nav_ext:
-                                    myCamera.addFilter(MsgConfig.MsgArg.NO_ARG);
+                                    myCamera.addFilter(MsgConfig.MsgType.NO_TYPE);
                                     break;
                                 case R.id.nav_bw:
-                                    myCamera.addFilter(MsgConfig.MsgArg.BW_TYPE);
+                                    myCamera.addFilter(MsgConfig.MsgType.BW_TYPE);
                                     break;
                                 case R.id.nav_mosaic:
-                                    myCamera.addFilter(MsgConfig.MsgArg.MOSAIC_TYPE);
+                                    myCamera.addFilter(MsgConfig.MsgType.MOSAIC_TYPE);
                                     break;
                                 case R.id.nav_smooth:
-                                    myCamera.addFilter(MsgConfig.MsgArg.SMOOTH_TYPE);
+                                    myCamera.addFilter(MsgConfig.MsgType.SMOOTH_TYPE);
                                     break;
                                 case R.id.nav_obscure:
-                                    myCamera.addFilter(MsgConfig.MsgArg.OBSCURE_TYPE);
+                                    myCamera.addFilter(MsgConfig.MsgType.OBSCURE_TYPE);
                                     break;
                                 case R.id.nav_sharpening:
-                                    myCamera.addFilter(MsgConfig.MsgArg.SHARPENING_TYPE);
+                                    myCamera.addFilter(MsgConfig.MsgType.SHARPENING_TYPE);
                                     break;
                                 case R.id.nav_edge:
-                                    myCamera.addFilter(MsgConfig.MsgArg.EDGE_TYPE);
+                                    myCamera.addFilter(MsgConfig.MsgType.EDGE_TYPE);
                                     break;
                                 case R.id.nav_emboss:
-                                    myCamera.addFilter(MsgConfig.MsgArg.EMBOSS_TYPE);
+                                    myCamera.addFilter(MsgConfig.MsgType.EMBOSS_TYPE);
                                     break;
                                 default:
                                     break;

@@ -1,35 +1,35 @@
 package com.example.nyamori.mytestapplication.filters;
 
 import android.opengl.GLES20;
-import android.util.Log;
 
 import com.example.nyamori.gles.GlUtil;
-import com.example.nyamori.gles.ShaderInfo;
+import com.example.nyamori.mytestapplication.R;
+import com.example.nyamori.mytestapplication.ShaderLoader;
 
 public class OutputFilter extends BaseFilter {
+    private int xStart;
+    private int yStart;
 
-    public OutputFilter(int width, int height){
+    public OutputFilter(int width, int height,int xStart,int yStart){
         super();
         this.width=width;
         this.height=height;
-        mProgramHandle = GlUtil.createProgram(ShaderInfo.VERTEX_SHADER,ShaderInfo.FRAGMENT_SHADER_2D);
-        if (mProgramHandle == 0) {
-            throw new RuntimeException("Unable to create program");
-        }
+        this.xStart=xStart;
+        this.yStart=yStart;
+        mProgramHandle = ShaderLoader.getInstance().loadShader(R.raw.fragment_shader_2d);
         getLocation();
         initRect();
     }
 
     @Override
     public void onBindFrame() {
-        GLES20.glViewport(0,0,width,height);
+        GLES20.glViewport(xStart,yStart,width,height);
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
         clearScreen();
     }
 
     @Override
     public void setTexture(int preTexture) {
-        Log.v(TAG, "setTexture: output texture="+preTexture);
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, preTexture);
     }
