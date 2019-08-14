@@ -9,8 +9,6 @@ import com.example.nyamori.mytestapplication.filters.*;
 import java.util.ArrayList;
 import java.util.List;
 
-
-// TODO: 19-8-7 拆解出filter类,将类改造成滤镜管理
 public class My2DFilterManager {
     private static final String TAG = "My2DFilterManager";
 
@@ -40,6 +38,11 @@ public class My2DFilterManager {
             filter.release();
         }
         filterList.clear();
+    }
+
+    public void changeFilter(int typeCode){
+        releaseList();
+        addFilter(typeCode);
     }
 
     public void addFilter(int typeCode){
@@ -78,6 +81,14 @@ public class My2DFilterManager {
             case MsgConfig.MsgType.BEAUTY_TYPE:
                 BeautyFilter beautyFilter=new BeautyFilter(width,height);
                 filterList.add(beautyFilter);
+                break;
+            case MsgConfig.MsgType.WHITENING_TYPE:
+                WhiteningFilter whiteningFilter=new WhiteningFilter(width,height);
+                filterList.add(whiteningFilter);
+                break;
+            case MsgConfig.MsgType.TEST_TYPE:
+                TestFilter testFilter=new TestFilter(width,height);
+                filterList.add(testFilter);
                 break;
             default:
                 throw new RuntimeException("Unhandled type");

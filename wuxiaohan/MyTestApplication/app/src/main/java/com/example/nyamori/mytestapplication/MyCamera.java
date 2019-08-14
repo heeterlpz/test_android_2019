@@ -119,8 +119,8 @@ public class MyCamera {
         }
     }
 
-    public void changeCameraType(){
-
+    public void changeCameraType(int comboType){
+        mOpenGLHandler.obtainMessage(MsgConfig.OPenGLMsg.MSG_CHANGE_TYPE,comboType,0).sendToTarget();
     }
 
     public void addFilter(int programType){
@@ -145,32 +145,14 @@ public class MyCamera {
                         updateImg();
                         break;
                     case MsgConfig.OPenGLMsg.MSG_CHANGE_TYPE:
-                        changeType(msg.arg1);
+                        my2DFilterManager.changeFilter(msg.arg1);
                         break;
                     case MsgConfig.OPenGLMsg.MSG_ADD_FILTER:
-                        Log.d(TAG, "handleMessage: add filter");
                         my2DFilterManager.addFilter(msg.arg1);
                         break;
                 }
             }
         };
-    }
-
-    private void changeType(int code) {
-        switch (code){
-            case MsgConfig.MsgType.NO_TYPE:
-                break;
-            case MsgConfig.MsgType.OBSCURE_TYPE:
-                break;
-            case MsgConfig.MsgType.SHARPENING_TYPE:
-                break;
-            case MsgConfig.MsgType.EDGE_TYPE:
-                break;
-            case MsgConfig.MsgType.EMBOSS_TYPE:
-                break;
-            default:
-                break;
-        }
     }
 
 

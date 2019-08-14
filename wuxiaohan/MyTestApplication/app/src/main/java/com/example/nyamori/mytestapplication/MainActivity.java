@@ -66,6 +66,12 @@ public class MainActivity extends AppCompatActivity {
                                 case R.id.nav_ext:
                                     myCamera.addFilter(MsgConfig.MsgType.NO_TYPE);
                                     break;
+                                case R.id.nav_beauty:
+                                    myCamera.changeCameraType(MsgConfig.MsgType.BEAUTY_TYPE);
+                                    break;
+                                case R.id.nav_whitening:
+                                    myCamera.changeCameraType(MsgConfig.MsgType.WHITENING_TYPE);
+                                    break;
                                 case R.id.nav_bw:
                                     myCamera.addFilter(MsgConfig.MsgType.BW_TYPE);
                                     break;
@@ -87,8 +93,11 @@ public class MainActivity extends AppCompatActivity {
                                 case R.id.nav_emboss:
                                     myCamera.addFilter(MsgConfig.MsgType.EMBOSS_TYPE);
                                     break;
+                                case R.id.nav_add_whitening:
+                                    myCamera.addFilter(MsgConfig.MsgType.WHITENING_TYPE);
+                                    break;
                                 case R.id.nav_test:
-                                    myCamera.addFilter(MsgConfig.MsgType.BEAUTY_TYPE);
+                                    myCamera.changeCameraType(MsgConfig.MsgType.TEST_TYPE);
                                 default:
                                     break;
                             }

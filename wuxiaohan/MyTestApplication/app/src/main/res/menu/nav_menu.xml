@@ -1,33 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <group android:checkableBehavior="single">
-        <item
-            android:id="@+id/nav_ext"
-            android:title="原图"/>
-        <item
-            android:id="@+id/nav_bw"
-            android:title="黑白"/>
-        <item
-            android:id="@+id/nav_mosaic"
-            android:title="马赛克"/>
-        <item
-            android:id="@+id/nav_smooth"
-            android:title="平滑"/>
+        <item android:title="更换">
+            <menu>
+                <item
+                    android:id="@+id/nav_ext"
+                    android:title="原图"/>
+                <item
+                    android:id="@+id/nav_beauty"
+                    android:title="美颜"/>
+                <item
+                    android:id="@+id/nav_whitening"
+                    android:title="美白"/>
+                <item
+                    android:id="@+id/nav_test"
+                    android:title="测试"/>
+            </menu>
+        </item>
 
         <item
-            android:id="@+id/nav_obscure"
-            android:title="高斯"/>
-        <item
-            android:id="@+id/nav_sharpening"
-            android:title="锐化"/>
-        <item
-            android:id="@+id/nav_edge"
-            android:title="边缘"/>
-        <item
-            android:id="@+id/nav_emboss"
-            android:title="浮雕"/>
-        <item
-            android:id="@+id/nav_test"
-            android:title="测试"/>
+            android:title="添加">
+            <menu>
+                <item
+                    android:id="@+id/nav_bw"
+                    android:title="黑白"/>
+                <item
+                    android:id="@+id/nav_mosaic"
+                    android:title="马赛克"/>
+                <item
+                    android:id="@+id/nav_smooth"
+                    android:title="平滑"/>
+
+                <item
+                    android:id="@+id/nav_obscure"
+                    android:title="高斯"/>
+                <item
+                    android:id="@+id/nav_sharpening"
+                    android:title="锐化"/>
+                <item
+                    android:id="@+id/nav_edge"
+                    android:title="边缘"/>
+                <item
+                    android:id="@+id/nav_emboss"
+                    android:title="浮雕"/>
+                <item
+                    android:title="美白"
+                    android:id="@+id/nav_add_whitening"/>
+            </menu>
+        </item>
+
     </group>
 </menu>
