@@ -16,10 +16,8 @@ import android.view.MenuItem;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -72,18 +70,11 @@ public class MainActivity extends AppCompatActivity {
                 if(myCamera!=null)myCamera.changeCamera();
             }
         });
-        filterList=(ListView)findViewById(R.id.filter_list);
-        filters.add("没有添加");
-        filterListAdapter=new ArrayAdapter<>(this,android.R.layout.simple_list_item_1,filters);
-        filterList.setAdapter(filterListAdapter);
-        filterList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String temp="点击了"+filters.get(position)+"滤镜";
-                Toast.makeText(MainActivity.this, temp,Toast.LENGTH_SHORT).show();
-                mDrawerLayout.closeDrawers();
-            }
-        });
+        initEndDrawerList();
+        initStartDrawer();
+    }
+
+    private void initStartDrawer() {
         NavigationView navigationView =(NavigationView)findViewById(R.id.nav_view);
         navigationView.setCheckedItem(R.id.nav_ext);
         navigationView.setNavigationItemSelectedListener(
@@ -138,6 +129,21 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         );
+    }
+
+    private void initEndDrawerList() {
+        filterList=(ListView)findViewById(R.id.filter_list);
+        filters.add("没有添加");
+        filterListAdapter=new ArrayAdapter<>(this,android.R.layout.simple_list_item_1,filters);
+        filterList.setAdapter(filterListAdapter);
+        filterList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                String temp="点击了"+filters.get(position)+"滤镜";
+                Toast.makeText(MainActivity.this, temp,Toast.LENGTH_SHORT).show();
+                mDrawerLayout.closeDrawers();
+            }
+        });
     }
 
     @Override

@@ -61,11 +61,11 @@ public class My2DFilterManager {
             SharpeningFilter sharpeningFilter=new SharpeningFilter(width,height);
             sharpeningFilter.setSharpeningLevel(1);
             filterList.add(sharpeningFilter);
-            filterTypeList.add("锐化");
+            filterTypeList.add(Config.FilterName.SHARPENING_TYPE);
             WhiteningFilter whiteningFilter=new WhiteningFilter(width,height);
             whiteningFilter.setBeta(4.0f);
             filterList.add(whiteningFilter);
-            filterTypeList.add("美白");
+            filterTypeList.add(Config.FilterName.WHITENING_TYPE);
         }else {
             addFilter(typeCode);
         }
@@ -79,54 +79,54 @@ public class My2DFilterManager {
             case Config.MsgType.OBSCURE_TYPE:
                 GaussianFilter gaussianFilter =new GaussianFilter(width,height);
                 filterList.add(gaussianFilter);
-                filterTypeList.add("高斯模糊");
+                filterTypeList.add(Config.FilterName.OBSCURE_TYPE);
                 break;
             case Config.MsgType.SHARPENING_TYPE:
                 SharpeningFilter sharpeningFilter=new SharpeningFilter(width,height);
                 sharpeningFilter.setSharpeningLevel(4);
                 filterList.add(sharpeningFilter);
-                filterTypeList.add("锐化");
+                filterTypeList.add(Config.FilterName.SHARPENING_TYPE);
                 break;
             case Config.MsgType.EDGE_TYPE:
                 EdgeFilter edgeFilter=new EdgeFilter(width,height);
                 filterList.add(edgeFilter);
-                filterTypeList.add("边缘检测");
+                filterTypeList.add(Config.FilterName.EDGE_TYPE);
                 break;
             case Config.MsgType.EMBOSS_TYPE:
                 EmbossFilter embossFilter=new EmbossFilter(width,height);
                 filterList.add(embossFilter);
-                filterTypeList.add("浮雕");
+                filterTypeList.add(Config.FilterName.EMBOSS_TYPE);
                 break;
             case Config.MsgType.BW_TYPE:
                 BWFilter bwFilter=new BWFilter(width,height);
                 filterList.add(bwFilter);
-                filterTypeList.add("黑白");
+                filterTypeList.add(Config.FilterName.BW_TYPE);
                 break;
             case Config.MsgType.MOSAIC_TYPE:
                 MosaicFilter mosaicFilter=new MosaicFilter(width,height);
                 filterList.add(mosaicFilter);
-                filterTypeList.add("马赛克");
+                filterTypeList.add(Config.FilterName.MOSAIC_TYPE);
                 break;
             case Config.MsgType.SMOOTH_TYPE:
                 SmoothFilter smoothFilter=new SmoothFilter(width,height);
                 filterList.add(smoothFilter);
-                filterTypeList.add("平滑");
+                filterTypeList.add(Config.FilterName.SMOOTH_TYPE);
                 break;
             case Config.MsgType.BEAUTY_TYPE:
                 BeautyFilter beautyFilter=new BeautyFilter(width,height);
                 filterList.add(beautyFilter);
-                filterTypeList.add("美颜");
+                filterTypeList.add(Config.FilterName.BEAUTY_TYPE);
                 break;
             case Config.MsgType.WHITENING_TYPE:
                 WhiteningFilter whiteningFilter=new WhiteningFilter(width,height);
                 whiteningFilter.setBeta(5.0f);
                 filterList.add(whiteningFilter);
-                filterTypeList.add("美白");
+                filterTypeList.add(Config.FilterName.WHITENING_TYPE);
                 break;
             case Config.MsgType.TEST_TYPE:
                 TestFilter testFilter=new TestFilter(width,height);
                 filterList.add(testFilter);
-                filterTypeList.add("测试");
+                filterTypeList.add(Config.FilterName.TEST_TYPE);
                 break;
             default:
                 throw new RuntimeException("Unhandled type");
