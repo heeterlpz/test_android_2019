@@ -45,7 +45,6 @@ public class MyCamera {
     private EglCore mEglCore;
     private SurfaceTexture mSurfaceTexture;
     private WindowSurface mWindowSurface;
-    private float[] mMatrix=new float[16];
     private Handler mOpenGLHandler;
 
     private int fpsCount;
@@ -57,12 +56,15 @@ public class MyCamera {
 
     private Handler mUIHandler;
     private Context mContext;
+    private int cameraType;
 
     private My2DFilterManager my2DFilterManager;
 
     public MyCamera(Handler mUIHandler,Surface mOutSurface,Context context){
         this.mUIHandler=mUIHandler;
         this.mContext=context;
+        cameraType=Config.CAMERA_TYPE.FRONT_TYPE;
+        MyFrameRect.setCameraType(cameraType);
         mEglCore=new EglCore(null,EglCore.FLAG_RECORDABLE);
         mWindowSurface=new WindowSurface(mEglCore,mOutSurface,false);
         mCameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
@@ -75,58 +77,62 @@ public class MyCamera {
                 CameraCharacteristics cameraCharacteristics=mCameraManager.getCameraCharacteristics(cameraID);
                 Integer facing=cameraCharacteristics.get(CameraCharacteristics.LENS_FACING);
                 StreamConfigurationMap map = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-                if(facing!=null&&facing==CameraCharacteristics.LENS_FACING_FRONT)continue;
+                if(cameraType==Config.CAMERA_TYPE.BACK_TYPE){
+                    if(facing!=null&&facing==CameraCharacteristics.LENS_FACING_FRONT)continue;
+                }else {
+                    if(facing!=null&&facing==CameraCharacteristics.LENS_FACING_BACK)continue;
+                }
                 this.cameraID=cameraID;
                 // TODO: 19-8-5 获取相机角度
-
                 //获取预览尺寸
-                if(width>height){
-                    mPreviewSize=getPreferredPreviewSize(map.getOutputSizes(SurfaceTexture.class),width,height);
-                }else {
-                    mPreviewSize=getPreferredPreviewSize(map.getOutputSizes(SurfaceTexture.class),height,width);
-                    mPreviewSize=new Size(mPreviewSize.getHeight(),mPreviewSize.getWidth());
-                    Log.d(TAG, "initCamera: new size="+mPreviewSize.toString());
+                if(width!=0&&height!=0){
+                    if(width>height){
+                        mPreviewSize=getPreferredPreviewSize(map.getOutputSizes(SurfaceTexture.class),width,height);
+                    }else {
+                        mPreviewSize=getPreferredPreviewSize(map.getOutputSizes(SurfaceTexture.class),height,width);
+                        mPreviewSize=new Size(mPreviewSize.getHeight(),mPreviewSize.getWidth());
+                        Log.d(TAG, "initCamera: new size="+mPreviewSize.toString());
+                    }
+                    xStart = (width - mPreviewSize.getWidth()) / 2;
+                    yStart = (height - mPreviewSize.getHeight());
                 }
-                xStart = (width - mPreviewSize.getWidth()) / 2;
-                yStart = (height - mPreviewSize.getHeight());
-                mOpenGLHandler.obtainMessage(MsgConfig.OPenGLMsg.MSG_INIT_OUT).sendToTarget();
+                mOpenGLHandler.obtainMessage(Config.OPenGLMsg.MSG_INIT_OUT).sendToTarget();
             }
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
     }
 
-    public void destroyCamera() {
-        if(mCamera!=null){
-            mCamera.close();
-            mCamera=null;
+    public void changeCamera(){
+        stopDraw();
+        if(cameraType== Config.CAMERA_TYPE.FRONT_TYPE){
+            cameraType= Config.CAMERA_TYPE.BACK_TYPE;
+        }else {
+            cameraType= Config.CAMERA_TYPE.FRONT_TYPE;
         }
+        MyFrameRect.setCameraType(cameraType);
+        initCamera(0,0);
+    }
+
+    public void destroyCamera() {
+        stopDraw();
         if(mWindowSurface!=null){
             mWindowSurface.release();
-        }
-        if(mSurfaceTexture!=null){
-            mSurfaceTexture.release();
-        }
-        if(mTextureID!=-1){
-            GlUtil.releaseTexture(mTextureID);
-            mTextureID=-1;
-        }
-        if(my2DFilterManager!=null){
-            my2DFilterManager.release();
         }
         if(mEglCore!=null){
             mEglCore.release();
         }
     }
 
+
+
     public void changeCameraType(int comboType){
-        mOpenGLHandler.obtainMessage(MsgConfig.OPenGLMsg.MSG_CHANGE_TYPE,comboType,0).sendToTarget();
+        mOpenGLHandler.obtainMessage(Config.OPenGLMsg.MSG_CHANGE_TYPE,comboType,0).sendToTarget();
     }
 
     public void addFilter(int programType){
-        mOpenGLHandler.obtainMessage(MsgConfig.OPenGLMsg.MSG_ADD_FILTER,programType,0).sendToTarget();
+        mOpenGLHandler.obtainMessage(Config.OPenGLMsg.MSG_ADD_FILTER,programType,0).sendToTarget();
     }
-
 
     private void initHandler() {
         HandlerThread handlerThreadCamera = new HandlerThread("Camera");
@@ -138,16 +144,16 @@ public class MyCamera {
             @Override
             public void handleMessage(Message msg) {
                 switch (msg.what){
-                    case MsgConfig.OPenGLMsg.MSG_INIT_OUT:
+                    case Config.OPenGLMsg.MSG_INIT_OUT:
                         initOpenGL();
                         break;
-                    case MsgConfig.OPenGLMsg.MSG_UPDATE_IMG:
+                    case Config.OPenGLMsg.MSG_UPDATE_IMG:
                         updateImg();
                         break;
-                    case MsgConfig.OPenGLMsg.MSG_CHANGE_TYPE:
+                    case Config.OPenGLMsg.MSG_CHANGE_TYPE:
                         my2DFilterManager.changeFilter(msg.arg1);
                         break;
-                    case MsgConfig.OPenGLMsg.MSG_ADD_FILTER:
+                    case Config.OPenGLMsg.MSG_ADD_FILTER:
                         my2DFilterManager.addFilter(msg.arg1);
                         break;
                 }
@@ -155,18 +161,33 @@ public class MyCamera {
         };
     }
 
+    private void stopDraw(){
+        if(mCamera!=null){
+            mCamera.close();
+            mCamera=null;
+        }
+        if(my2DFilterManager!=null){
+            my2DFilterManager.release();
+        }
+        if(mSurfaceTexture!=null){
+            mSurfaceTexture.release();
+        }
+        if(mTextureID!=-1){
+            GlUtil.releaseTexture(mTextureID);
+            mTextureID=-1;
+        }
+    }
 
     private void updateImg() {
         mSurfaceTexture.updateTexImage();//更新了信息
-        mSurfaceTexture.getTransformMatrix(mMatrix);
         //设置了view的大小和起始坐标
-        my2DFilterManager.draw(mMatrix,mTextureID);
+        my2DFilterManager.draw(mTextureID);
         mWindowSurface.swapBuffers();
 
         fpsCount++;
         long nowTime=System.currentTimeMillis();
         if((nowTime-fpsTime)>999){
-            mUIHandler.obtainMessage(MsgConfig.UIMsg.UI_UPDATE_FPS,fpsCount,0).sendToTarget();
+            mUIHandler.obtainMessage(Config.UIMsg.UI_UPDATE_FPS,fpsCount,0).sendToTarget();
             fpsTime=nowTime;
             fpsCount=0;
         }
@@ -178,7 +199,7 @@ public class MyCamera {
         mSurfaceTexture.setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
             @Override
             public void onFrameAvailable(SurfaceTexture surfaceTexture) {
-                mOpenGLHandler.obtainMessage(MsgConfig.OPenGLMsg.MSG_UPDATE_IMG).sendToTarget();
+                mOpenGLHandler.obtainMessage(Config.OPenGLMsg.MSG_UPDATE_IMG).sendToTarget();
             }
         });
         mSurfaceTexture.setDefaultBufferSize(mPreviewSize.getWidth(),mPreviewSize.getHeight());

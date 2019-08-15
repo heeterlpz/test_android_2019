@@ -3,11 +3,12 @@ precision mediump float;
 varying vec2 vTextureCoord;
 uniform sampler2D sTexture;
 uniform vec2 uTexOffset[KERNEL_SIZE];
+uniform float level;
 void main() {
-	const float scaleFactor=1.0;//给出最终求和时的加权因子(调整亮度)
+	float scaleFactor=1.0/level;//给出最终求和时的加权因子(调整亮度)
 	//卷积内核中各个位置的值
 	float kernelValue0 = 0.0; float kernelValue1 = -1.0; float kernelValue2 = 0.0;
-	float kernelValue3 = -1.0; float kernelValue4 = 5.0; float kernelValue5 = -1.0;
+	float kernelValue3 = -1.0; float kernelValue4 = 4.0+level; float kernelValue5 = -1.0;
 	float kernelValue6 = 0.0; float kernelValue7 = -1.0; float kernelValue8 = 0.0;
 	vec4 sum;//最终的颜色和
 	//获取卷积内核中各个元素对应像素的颜色值

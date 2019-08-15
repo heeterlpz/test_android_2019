@@ -1,6 +1,6 @@
 package com.example.nyamori.mytestapplication;
 
-public  class MsgConfig {
+public class Config {
     public static class OPenGLMsg{
         public static final int MSG_UPDATE_IMG = 0;
         public static final int MSG_INIT_OUT = 1;
@@ -24,5 +24,10 @@ public  class MsgConfig {
 
     public static class UIMsg{
         public static final int UI_UPDATE_FPS = 0;
+    }
+
+    public static class CAMERA_TYPE{
+        public final static int BACK_TYPE=0;
+        public final static int FRONT_TYPE=1;
     }
 }

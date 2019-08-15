@@ -115,10 +115,6 @@ public class BaseFilter {
         GlUtil.checkLocation(maPositionLoc, "aPosition");
         maTextureCoordLoc = GLES20.glGetAttribLocation(mProgramHandle, "aTextureCoord");
         GlUtil.checkLocation(maTextureCoordLoc, "aTextureCoord");
-        muMVPMatrixLoc = GLES20.glGetUniformLocation(mProgramHandle, "uMVPMatrix");
-        GlUtil.checkLocation(muMVPMatrixLoc, "uMVPMatrix");
-        muTexMatrixLoc = GLES20.glGetUniformLocation(mProgramHandle, "uTexMatrix");
-        GlUtil.checkLocation(muTexMatrixLoc, "uTexMatrix");
     }
 
     public void initRect(){
@@ -130,13 +126,13 @@ public class BaseFilter {
         texStride=MyFrameRect.getTexCoordStride();
     }
 
-    public void draw(int preTexture,float[] texMatrix){
+    public void draw(int preTexture){
         GlUtil.checkGlError("draw start");
         onBindFrame();
         setProgram();
         setTexture(preTexture);
         setUniform();
-        onDraw(texMatrix);
+        onDraw();
         unBindFrame();
     }
 
@@ -164,13 +160,7 @@ public class BaseFilter {
 
     }
 
-    public void onDraw(float[] texMatrix){
-        // Copy the model/view/projection matrix over.
-        GLES20.glUniformMatrix4fv(muMVPMatrixLoc, 1, false, GlUtil.IDENTITY_MATRIX, 0);
-        GlUtil.checkGlError("glUniformMatrix4fv");
-        // Copy the texture transformation matrix over.
-        GLES20.glUniformMatrix4fv(muTexMatrixLoc, 1, false, texMatrix, 0);
-        GlUtil.checkGlError("glUniformMatrix4fv");
+    public void onDraw(){
         // Enable the "aPosition" vertex attribute.
         GLES20.glEnableVertexAttribArray(maPositionLoc);
         GlUtil.checkGlError("glEnableVertexAttribArray");

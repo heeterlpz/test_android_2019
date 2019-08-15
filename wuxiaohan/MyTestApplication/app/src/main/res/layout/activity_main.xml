@@ -26,6 +26,12 @@
                 android:text="withOpenGL-FPS:"
                 android:textColor="@color/colorAccent"/>
         </FrameLayout>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:id="@+id/change_camera"
+            android:text="切换摄像头"/>
     </LinearLayout>
 
     <android.support.design.widget.NavigationView

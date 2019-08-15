@@ -15,6 +15,7 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.Surface;
 import android.view.TextureView;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -51,6 +52,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initDrawer() {
+        findViewById(R.id.change_camera).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(myCamera!=null)myCamera.changeCamera();
+            }
+        });
         withOpenGL=(TextView)findViewById(R.id.with_OpenGL);
         mDrawerLayout=(DrawerLayout)findViewById(R.id.drawer_layout);
         NavigationView navigationView =(NavigationView)findViewById(R.id.nav_view);
@@ -64,40 +71,40 @@ public class MainActivity extends AppCompatActivity {
                         }else {
                             switch (item.getItemId()){
                                 case R.id.nav_ext:
-                                    myCamera.addFilter(MsgConfig.MsgType.NO_TYPE);
+                                    myCamera.addFilter(Config.MsgType.NO_TYPE);
                                     break;
                                 case R.id.nav_beauty:
-                                    myCamera.changeCameraType(MsgConfig.MsgType.BEAUTY_TYPE);
+                                    myCamera.changeCameraType(Config.MsgType.BEAUTY_TYPE);
                                     break;
                                 case R.id.nav_whitening:
-                                    myCamera.changeCameraType(MsgConfig.MsgType.WHITENING_TYPE);
+                                    myCamera.changeCameraType(Config.MsgType.WHITENING_TYPE);
                                     break;
                                 case R.id.nav_bw:
-                                    myCamera.addFilter(MsgConfig.MsgType.BW_TYPE);
+                                    myCamera.addFilter(Config.MsgType.BW_TYPE);
                                     break;
                                 case R.id.nav_mosaic:
-                                    myCamera.addFilter(MsgConfig.MsgType.MOSAIC_TYPE);
+                                    myCamera.addFilter(Config.MsgType.MOSAIC_TYPE);
                                     break;
                                 case R.id.nav_smooth:
-                                    myCamera.addFilter(MsgConfig.MsgType.SMOOTH_TYPE);
+                                    myCamera.addFilter(Config.MsgType.SMOOTH_TYPE);
                                     break;
                                 case R.id.nav_obscure:
-                                    myCamera.addFilter(MsgConfig.MsgType.OBSCURE_TYPE);
+                                    myCamera.addFilter(Config.MsgType.OBSCURE_TYPE);
                                     break;
                                 case R.id.nav_sharpening:
-                                    myCamera.addFilter(MsgConfig.MsgType.SHARPENING_TYPE);
+                                    myCamera.addFilter(Config.MsgType.SHARPENING_TYPE);
                                     break;
                                 case R.id.nav_edge:
-                                    myCamera.addFilter(MsgConfig.MsgType.EDGE_TYPE);
+                                    myCamera.addFilter(Config.MsgType.EDGE_TYPE);
                                     break;
                                 case R.id.nav_emboss:
-                                    myCamera.addFilter(MsgConfig.MsgType.EMBOSS_TYPE);
+                                    myCamera.addFilter(Config.MsgType.EMBOSS_TYPE);
                                     break;
                                 case R.id.nav_add_whitening:
-                                    myCamera.addFilter(MsgConfig.MsgType.WHITENING_TYPE);
+                                    myCamera.addFilter(Config.MsgType.WHITENING_TYPE);
                                     break;
                                 case R.id.nav_test:
-                                    myCamera.changeCameraType(MsgConfig.MsgType.TEST_TYPE);
+                                    myCamera.changeCameraType(Config.MsgType.TEST_TYPE);
                                 default:
                                     break;
                             }
@@ -147,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void handleMessage(Message msg) {
                 switch (msg.what) {
-                    case MsgConfig.UIMsg.UI_UPDATE_FPS:
+                    case Config.UIMsg.UI_UPDATE_FPS:
                         withOpenGL.setText("withOpenGL-FPS:"+msg.arg1);
                         break;
                 }
