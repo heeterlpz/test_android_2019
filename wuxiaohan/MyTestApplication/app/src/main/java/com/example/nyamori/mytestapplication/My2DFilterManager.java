@@ -18,13 +18,26 @@ public class My2DFilterManager {
     private InputFilter inputFilter;
     private OutputFilter outputFilter;
     private List<BaseFilter> filterList;
+    private List<String> filterTypeList;
 
     public My2DFilterManager(int width,int height,int xStart,int yStart) {
         this.width=width;
         this.height=height;
         filterList=new ArrayList<>();
+        filterTypeList=new ArrayList<>();
         inputFilter=new InputFilter(width,height);
         outputFilter =new OutputFilter(width,height,xStart,yStart);
+    }
+
+    public void changeCamera(int width, int height, int xStart, int yStart){
+        this.width=width;
+        this.height=height;
+        inputFilter.setSize(width,height);
+        inputFilter.flashTexBuffer();
+        outputFilter.setSize(width,height,xStart,yStart);
+        for(BaseFilter filter:filterList){
+            filter.setSize(width,height);
+        }
     }
 
     public void release() {
@@ -38,6 +51,7 @@ public class My2DFilterManager {
             filter.release();
         }
         filterList.clear();
+        filterTypeList.clear();
     }
 
     public void changeFilter(int typeCode){
@@ -47,6 +61,11 @@ public class My2DFilterManager {
             SharpeningFilter sharpeningFilter=new SharpeningFilter(width,height);
             sharpeningFilter.setSharpeningLevel(1);
             filterList.add(sharpeningFilter);
+            filterTypeList.add("锐化");
+            WhiteningFilter whiteningFilter=new WhiteningFilter(width,height);
+            whiteningFilter.setBeta(4.0f);
+            filterList.add(whiteningFilter);
+            filterTypeList.add("美白");
         }else {
             addFilter(typeCode);
         }
@@ -60,43 +79,54 @@ public class My2DFilterManager {
             case Config.MsgType.OBSCURE_TYPE:
                 GaussianFilter gaussianFilter =new GaussianFilter(width,height);
                 filterList.add(gaussianFilter);
+                filterTypeList.add("高斯模糊");
                 break;
             case Config.MsgType.SHARPENING_TYPE:
                 SharpeningFilter sharpeningFilter=new SharpeningFilter(width,height);
                 sharpeningFilter.setSharpeningLevel(4);
                 filterList.add(sharpeningFilter);
+                filterTypeList.add("锐化");
                 break;
             case Config.MsgType.EDGE_TYPE:
                 EdgeFilter edgeFilter=new EdgeFilter(width,height);
                 filterList.add(edgeFilter);
+                filterTypeList.add("边缘检测");
                 break;
             case Config.MsgType.EMBOSS_TYPE:
                 EmbossFilter embossFilter=new EmbossFilter(width,height);
                 filterList.add(embossFilter);
+                filterTypeList.add("浮雕");
                 break;
             case Config.MsgType.BW_TYPE:
                 BWFilter bwFilter=new BWFilter(width,height);
                 filterList.add(bwFilter);
+                filterTypeList.add("黑白");
                 break;
             case Config.MsgType.MOSAIC_TYPE:
                 MosaicFilter mosaicFilter=new MosaicFilter(width,height);
                 filterList.add(mosaicFilter);
+                filterTypeList.add("马赛克");
                 break;
             case Config.MsgType.SMOOTH_TYPE:
                 SmoothFilter smoothFilter=new SmoothFilter(width,height);
                 filterList.add(smoothFilter);
+                filterTypeList.add("平滑");
                 break;
             case Config.MsgType.BEAUTY_TYPE:
                 BeautyFilter beautyFilter=new BeautyFilter(width,height);
                 filterList.add(beautyFilter);
+                filterTypeList.add("美颜");
                 break;
             case Config.MsgType.WHITENING_TYPE:
                 WhiteningFilter whiteningFilter=new WhiteningFilter(width,height);
+                whiteningFilter.setBeta(5.0f);
                 filterList.add(whiteningFilter);
+                filterTypeList.add("美白");
                 break;
             case Config.MsgType.TEST_TYPE:
                 TestFilter testFilter=new TestFilter(width,height);
                 filterList.add(testFilter);
+                filterTypeList.add("测试");
                 break;
             default:
                 throw new RuntimeException("Unhandled type");
@@ -137,5 +167,9 @@ public class My2DFilterManager {
             preTexture=filter.getTexture();
         }
         outputFilter.draw(preTexture);
+    }
+
+    public List<String> getFilterTypeList() {
+        return filterTypeList;
     }
 }

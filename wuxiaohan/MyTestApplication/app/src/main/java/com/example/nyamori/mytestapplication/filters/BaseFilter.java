@@ -59,6 +59,10 @@ public class BaseFilter {
 
     public int getTexture(){return myTexture[0];}
 
+    public void setSize(int width,int height){
+        chooseSize(width,height);
+    }
+
     public void chooseSize(int width,int height){
         this.width=judgeSize(width);
         this.height=judgeSize(height);

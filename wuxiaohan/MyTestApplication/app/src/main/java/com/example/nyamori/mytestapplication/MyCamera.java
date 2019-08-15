@@ -30,10 +30,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-// TODO: 19-8-9 解决整体的时延问题 
 public class MyCamera {
     private final static String TAG = "MyCamera";
 
+    private Size mSurfaceSize;
     private Size mPreviewSize;
 
     private CameraManager mCameraManager;
@@ -51,14 +51,14 @@ public class MyCamera {
     private long fpsTime;
 
     private int mTextureID=-1;
-    private int xStart;
-    private int yStart;
 
     private Handler mUIHandler;
     private Context mContext;
     private int cameraType;
 
     private My2DFilterManager my2DFilterManager;
+
+    private long nowTime;
 
     public MyCamera(Handler mUIHandler,Surface mOutSurface,Context context){
         this.mUIHandler=mUIHandler;
@@ -71,7 +71,14 @@ public class MyCamera {
         initHandler();
     }
 
-    public void initCamera(int width, int height){
+    public void init(int width,int height){
+        mSurfaceSize=new Size(width,height);
+        initCamera();
+        mOpenGLHandler.obtainMessage(Config.OPenGLMsg.MSG_INIT_OUT).sendToTarget();
+    }
+
+    public void initCamera(){
+        nowTime=System.currentTimeMillis();
         try{
             for (String cameraID:mCameraManager.getCameraIdList()){
                 CameraCharacteristics cameraCharacteristics=mCameraManager.getCameraCharacteristics(cameraID);
@@ -85,18 +92,16 @@ public class MyCamera {
                 this.cameraID=cameraID;
                 // TODO: 19-8-5 获取相机角度
                 //获取预览尺寸
-                if(width!=0&&height!=0){
-                    if(width>height){
-                        mPreviewSize=getPreferredPreviewSize(map.getOutputSizes(SurfaceTexture.class),width,height);
-                    }else {
-                        mPreviewSize=getPreferredPreviewSize(map.getOutputSizes(SurfaceTexture.class),height,width);
-                        mPreviewSize=new Size(mPreviewSize.getHeight(),mPreviewSize.getWidth());
-                        Log.d(TAG, "initCamera: new size="+mPreviewSize.toString());
-                    }
-                    xStart = (width - mPreviewSize.getWidth()) / 2;
-                    yStart = (height - mPreviewSize.getHeight());
+                if(mSurfaceSize.getWidth()>mSurfaceSize.getHeight()){
+                    mPreviewSize=getPreferredPreviewSize(map.getOutputSizes(SurfaceTexture.class),mSurfaceSize.getWidth(),mSurfaceSize.getHeight());
+                }else {
+                    mPreviewSize=getPreferredPreviewSize(map.getOutputSizes(SurfaceTexture.class),mSurfaceSize.getHeight(),mSurfaceSize.getWidth());
+                    mPreviewSize=new Size(mPreviewSize.getHeight(),mPreviewSize.getWidth());
+                    Log.d(TAG, "initCamera: new size="+mPreviewSize.toString());
                 }
-                mOpenGLHandler.obtainMessage(Config.OPenGLMsg.MSG_INIT_OUT).sendToTarget();
+                long time=System.currentTimeMillis();
+                Log.i(TAG, "initCamera: time="+(time-nowTime));
+                nowTime=time;
             }
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -104,18 +109,32 @@ public class MyCamera {
     }
 
     public void changeCamera(){
-        stopDraw();
+        mCamera.close();
         if(cameraType== Config.CAMERA_TYPE.FRONT_TYPE){
             cameraType= Config.CAMERA_TYPE.BACK_TYPE;
         }else {
             cameraType= Config.CAMERA_TYPE.FRONT_TYPE;
         }
         MyFrameRect.setCameraType(cameraType);
-        initCamera(0,0);
+        initCamera();
+        mOpenGLHandler.obtainMessage(Config.OPenGLMsg.MSG_CHANGE_CAMERA).sendToTarget();
     }
 
     public void destroyCamera() {
-        stopDraw();
+        if(mCamera!=null){
+            mCamera.close();
+            mCamera=null;
+        }
+        if(mSurfaceTexture!=null){
+            mSurfaceTexture.release();
+        }
+        if(mTextureID!=-1){
+            GlUtil.releaseTexture(mTextureID);
+            mTextureID=-1;
+        }
+        if(my2DFilterManager!=null){
+            my2DFilterManager.release();
+        }
         if(mWindowSurface!=null){
             mWindowSurface.release();
         }
@@ -124,14 +143,16 @@ public class MyCamera {
         }
     }
 
-
-
-    public void changeCameraType(int comboType){
+    public void changeFilterType(int comboType){
         mOpenGLHandler.obtainMessage(Config.OPenGLMsg.MSG_CHANGE_TYPE,comboType,0).sendToTarget();
     }
 
     public void addFilter(int programType){
         mOpenGLHandler.obtainMessage(Config.OPenGLMsg.MSG_ADD_FILTER,programType,0).sendToTarget();
+    }
+
+    public List<String> getFilterList(){
+        return my2DFilterManager.getFilterTypeList();
     }
 
     private void initHandler() {
@@ -146,37 +167,37 @@ public class MyCamera {
                 switch (msg.what){
                     case Config.OPenGLMsg.MSG_INIT_OUT:
                         initOpenGL();
+                        openCamera();
                         break;
                     case Config.OPenGLMsg.MSG_UPDATE_IMG:
                         updateImg();
                         break;
                     case Config.OPenGLMsg.MSG_CHANGE_TYPE:
                         my2DFilterManager.changeFilter(msg.arg1);
+                        mUIHandler.obtainMessage(Config.UIMsg.UI_UPDATE_LIST).sendToTarget();
                         break;
                     case Config.OPenGLMsg.MSG_ADD_FILTER:
                         my2DFilterManager.addFilter(msg.arg1);
+                        mUIHandler.obtainMessage(Config.UIMsg.UI_UPDATE_LIST).sendToTarget();
+                        break;
+                    case Config.OPenGLMsg.MSG_CHANGE_CAMERA:
+                        changeCameraInOpenGL();
+                        openCamera();
                         break;
                 }
             }
         };
     }
 
-    private void stopDraw(){
-        if(mCamera!=null){
-            mCamera.close();
-            mCamera=null;
-        }
-        if(my2DFilterManager!=null){
-            my2DFilterManager.release();
-        }
-        if(mSurfaceTexture!=null){
-            mSurfaceTexture.release();
-        }
-        if(mTextureID!=-1){
-            GlUtil.releaseTexture(mTextureID);
-            mTextureID=-1;
-        }
+    private void changeCameraInOpenGL() {
+        int width=mPreviewSize.getWidth();
+        int height=mPreviewSize.getHeight();
+        int xStart = (mSurfaceSize.getWidth() - mPreviewSize.getWidth()) / 2;
+        int yStart = (mSurfaceSize.getHeight() - mPreviewSize.getHeight());
+        my2DFilterManager.changeCamera(width,height,xStart,yStart);
+        mSurfaceTexture.setDefaultBufferSize(width,height);
     }
+
 
     private void updateImg() {
         mSurfaceTexture.updateTexImage();//更新了信息
@@ -194,22 +215,26 @@ public class MyCamera {
     }
 
     private void initOpenGL() {
+        int width=mPreviewSize.getWidth();
+        int height=mPreviewSize.getHeight();
+        int xStart = (mSurfaceSize.getWidth() - mPreviewSize.getWidth()) / 2;
+        int yStart = (mSurfaceSize.getHeight() - mPreviewSize.getHeight());
+
         mWindowSurface.makeCurrent();
-        mSurfaceTexture=new SurfaceTexture(-1);
+        my2DFilterManager=new My2DFilterManager(width,height,xStart,yStart);
+        mTextureID=my2DFilterManager.createInputTextureObject();
+        mSurfaceTexture=new SurfaceTexture(mTextureID);
         mSurfaceTexture.setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
             @Override
             public void onFrameAvailable(SurfaceTexture surfaceTexture) {
                 mOpenGLHandler.obtainMessage(Config.OPenGLMsg.MSG_UPDATE_IMG).sendToTarget();
             }
         });
-        mSurfaceTexture.setDefaultBufferSize(mPreviewSize.getWidth(),mPreviewSize.getHeight());
-        my2DFilterManager=new My2DFilterManager(mPreviewSize.getWidth(),mPreviewSize.getHeight(),xStart,yStart);
-        mTextureID=my2DFilterManager.createInputTextureObject();
-        mSurfaceTexture.detachFromGLContext();
-        mSurfaceTexture.attachToGLContext(mTextureID);
-        fpsCount=0;
-        fpsTime=System.currentTimeMillis();
-        openCamera();
+        mSurfaceTexture.setDefaultBufferSize(width,height);
+
+        long time=System.currentTimeMillis();
+        Log.i(TAG, "initOpenGL: time="+(time-nowTime));
+        nowTime=time;
     }
 
     private void openCamera() {
@@ -227,6 +252,11 @@ public class MyCamera {
         @Override
         public void onOpened(@NonNull CameraDevice camera) {
             mCamera=camera;
+
+            long time=System.currentTimeMillis();
+            Log.i(TAG, "Camera open: time="+(time-nowTime));
+            nowTime=time;
+
             try{
                 takePreview();
             } catch (CameraAccessException e) {
@@ -249,7 +279,6 @@ public class MyCamera {
         }
     };
 
-
     private void takePreview() throws CameraAccessException {
         mPreviewBuilder = mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
         mPreviewBuilder.addTarget(new Surface(mSurfaceTexture));
@@ -257,15 +286,19 @@ public class MyCamera {
     }
     private CameraCaptureSession.StateCallback mSessionPreviewStateCallback = new CameraCaptureSession.StateCallback() {
         @Override
-        public void onConfigured(@NonNull CameraCaptureSession session) {
+        public void onConfigured(@NonNull CameraCaptureSession session) {//配置完毕开始预览
             if(mCamera==null)return;
-            CameraCaptureSession mSession = session;
-            //配置完毕开始预览
+            fpsCount=0;
+            fpsTime=System.currentTimeMillis();
+
+            long time=System.currentTimeMillis();
+            Log.i(TAG, "initSession: time="+(time-nowTime));
+            nowTime=time;
             try {
                 //自动对焦
                 mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
                 //无限次的重复获取图像
-                mSession.setRepeatingRequest(mPreviewBuilder.build(), null, mCameraHandler);
+                session.setRepeatingRequest(mPreviewBuilder.build(), null, mCameraHandler);
             } catch (CameraAccessException e) {
                 e.printStackTrace();
             }

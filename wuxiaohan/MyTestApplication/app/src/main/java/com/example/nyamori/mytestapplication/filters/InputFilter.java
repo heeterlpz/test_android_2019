@@ -14,7 +14,7 @@ public class InputFilter extends BaseFilter {
     @Override
     public void initRect() {
         super.initRect();
-        texBuffer= MyFrameRect.getFullRectangleTexRotate90Buf();
+        flashTexBuffer();
     }
 
     @Override
@@ -23,5 +23,9 @@ public class InputFilter extends BaseFilter {
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, preTexture);
         GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, myTexture[0]);
+    }
+
+    public void flashTexBuffer(){
+        texBuffer=MyFrameRect.getFullRectangleTexRotate90Buf();
     }
 }

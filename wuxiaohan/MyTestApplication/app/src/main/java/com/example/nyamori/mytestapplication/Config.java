@@ -6,6 +6,7 @@ public class Config {
         public static final int MSG_INIT_OUT = 1;
         public static final int MSG_CHANGE_TYPE=2;
         public static final int MSG_ADD_FILTER=3;
+        public static final int MSG_CHANGE_CAMERA=4;
     }
 
     public static class MsgType {
@@ -24,6 +25,7 @@ public class Config {
 
     public static class UIMsg{
         public static final int UI_UPDATE_FPS = 0;
+        public static final int UI_UPDATE_LIST=1;
     }
 
     public static class CAMERA_TYPE{

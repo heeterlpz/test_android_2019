@@ -16,8 +16,16 @@ import android.view.MenuItem;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -27,6 +35,9 @@ public class MainActivity extends AppCompatActivity {
     private TextureView mTextureView;
     private TextureView.SurfaceTextureListener mSurfaceTextureListener;
     private TextView withOpenGL;
+    private ListView filterList;
+    private ArrayAdapter<String> filterListAdapter;
+    private List<String> filters;
     private Surface mOutSurface;
     private Handler mUIHandler;
     private MyCamera myCamera;
@@ -45,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(MainActivity.this, new String[]{"android.permission.CAMERA"}, 1);
         }else {
+            filters=new ArrayList<>();
             initDrawer();
             initSurfaceView();
             ShaderLoader.getInstance(this);
@@ -52,14 +64,26 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initDrawer() {
+        withOpenGL=(TextView)findViewById(R.id.with_OpenGL);
+        mDrawerLayout=(DrawerLayout)findViewById(R.id.drawer_layout);
         findViewById(R.id.change_camera).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if(myCamera!=null)myCamera.changeCamera();
             }
         });
-        withOpenGL=(TextView)findViewById(R.id.with_OpenGL);
-        mDrawerLayout=(DrawerLayout)findViewById(R.id.drawer_layout);
+        filterList=(ListView)findViewById(R.id.filter_list);
+        filters.add("没有添加");
+        filterListAdapter=new ArrayAdapter<>(this,android.R.layout.simple_list_item_1,filters);
+        filterList.setAdapter(filterListAdapter);
+        filterList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                String temp="点击了"+filters.get(position)+"滤镜";
+                Toast.makeText(MainActivity.this, temp,Toast.LENGTH_SHORT).show();
+                mDrawerLayout.closeDrawers();
+            }
+        });
         NavigationView navigationView =(NavigationView)findViewById(R.id.nav_view);
         navigationView.setCheckedItem(R.id.nav_ext);
         navigationView.setNavigationItemSelectedListener(
@@ -74,10 +98,10 @@ public class MainActivity extends AppCompatActivity {
                                     myCamera.addFilter(Config.MsgType.NO_TYPE);
                                     break;
                                 case R.id.nav_beauty:
-                                    myCamera.changeCameraType(Config.MsgType.BEAUTY_TYPE);
+                                    myCamera.changeFilterType(Config.MsgType.BEAUTY_TYPE);
                                     break;
                                 case R.id.nav_whitening:
-                                    myCamera.changeCameraType(Config.MsgType.WHITENING_TYPE);
+                                    myCamera.changeFilterType(Config.MsgType.WHITENING_TYPE);
                                     break;
                                 case R.id.nav_bw:
                                     myCamera.addFilter(Config.MsgType.BW_TYPE);
@@ -104,7 +128,7 @@ public class MainActivity extends AppCompatActivity {
                                     myCamera.addFilter(Config.MsgType.WHITENING_TYPE);
                                     break;
                                 case R.id.nav_test:
-                                    myCamera.changeCameraType(Config.MsgType.TEST_TYPE);
+                                    myCamera.changeFilterType(Config.MsgType.TEST_TYPE);
                                 default:
                                     break;
                             }
@@ -157,6 +181,11 @@ public class MainActivity extends AppCompatActivity {
                     case Config.UIMsg.UI_UPDATE_FPS:
                         withOpenGL.setText("withOpenGL-FPS:"+msg.arg1);
                         break;
+                    case Config.UIMsg.UI_UPDATE_LIST:
+                        filters.clear();
+                        filters.addAll(0,myCamera.getFilterList());
+                        filterListAdapter.notifyDataSetChanged();
+                        break;
                 }
             }
         };
@@ -167,7 +196,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.v(TAG, "onSurfaceTextureAvailable: size="+width+"x"+height);
                 mOutSurface=new Surface(surface);
                 myCamera=new MyCamera(mUIHandler,mOutSurface,getApplicationContext());
-                myCamera.initCamera(width,height);
+                myCamera.init(width,height);
             }
 
             @Override
