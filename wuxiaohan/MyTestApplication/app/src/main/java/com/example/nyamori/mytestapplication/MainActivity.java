@@ -1,6 +1,6 @@
 package com.example.nyamori.mytestapplication;
 
-import android.app.ProgressDialog;
+import android.annotation.SuppressLint;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
@@ -27,7 +27,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.nyamori.mytestapplication.filters.*;
+import com.example.nyamori.mytestapplication.filters.BaseFilter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -99,12 +99,13 @@ public class MainActivity extends AppCompatActivity {
         if(myCamera!=null){
             myCamera.destroyCamera();
         }
+        mUIHandler.removeCallbacksAndMessages(null);
         super.onDestroy();
     }
 
     private void initDrawer() {
-        withOpenGL=(TextView)findViewById(R.id.with_OpenGL);
-        mDrawerLayout=(DrawerLayout)findViewById(R.id.drawer_layout);
+        withOpenGL= findViewById(R.id.with_OpenGL);
+        mDrawerLayout= findViewById(R.id.drawer_layout);
         findViewById(R.id.change_camera).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -116,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initStartDrawer() {
-        NavigationView navigationView =(NavigationView)findViewById(R.id.nav_view);
+        NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setCheckedItem(R.id.nav_ext);
         navigationView.setNavigationItemSelectedListener(
                 new NavigationView.OnNavigationItemSelectedListener() {
@@ -159,6 +160,9 @@ public class MainActivity extends AppCompatActivity {
                                 case R.id.nav_add_whitening:
                                     myCamera.addFilter(Config.MsgType.WHITENING_TYPE);
                                     break;
+                                case R.id.nav_add_beauty:
+                                    myCamera.addFilter(Config.MsgType.BEAUTY_TYPE);
+                                    break;
                                 case R.id.nav_test:
                                     myCamera.changeFilterType(Config.MsgType.TEST_TYPE);
                                 default:
@@ -173,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initEndDrawerList() {
-        filterList=(ListView)findViewById(R.id.filter_list);
+        filterList= findViewById(R.id.filter_list);
         filters.add("没有添加");
         filterListAdapter=new ArrayAdapter<>(this,android.R.layout.simple_list_item_1,filters);
         filterList.setAdapter(filterListAdapter);
@@ -196,8 +200,10 @@ public class MainActivity extends AppCompatActivity {
         filterList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                Toast.makeText(MainActivity.this,"删除滤镜",Toast.LENGTH_SHORT).show();
+                String delete="删除了"+filters.get(position)+"滤镜";
+                Toast.makeText(MainActivity.this,delete,Toast.LENGTH_SHORT).show();
                 myCamera.deleteFilter(position);
+                mDrawerLayout.closeDrawers();
                 return true;
             }
         });
@@ -211,14 +217,14 @@ public class MainActivity extends AppCompatActivity {
         TextView maxProgressText=dialogView.findViewById(R.id.max_progress);
         final TextView nowProgressText=dialogView.findViewById(R.id.now_progress);
         final SeekBar levelBar=dialogView.findViewById(R.id.level_bar);
-        maxProgressText.setText(""+filter.getLevelMax());
-        nowProgressText.setText(""+filter.getLevel());
+        maxProgressText.setText(String.valueOf(filter.getLevelMax()));
+        nowProgressText.setText(String.valueOf(filter.getLevel()));
         levelBar.setProgress(filter.getLevel());
         levelBar.setMax(filter.getLevelMax());
         levelBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                nowProgressText.setText(""+progress);
+                nowProgressText.setText(String.valueOf(progress));
                 filter.setLevel(progress);
             }
 
@@ -240,14 +246,15 @@ public class MainActivity extends AppCompatActivity {
         customizeDialog.show();
     }
 
+    @SuppressLint("HandlerLeak")
     private void initSurfaceView() {
-        // TODO: 19-8-8 解决handler可能的内存泄露 
         mUIHandler=new Handler(){
             @Override
             public void handleMessage(Message msg) {
                 switch (msg.what) {
                     case Config.UIMsg.UI_UPDATE_FPS:
-                        withOpenGL.setText("withOpenGL-FPS:"+msg.arg1);
+                        String fps="withOpenGL-FPS:"+msg.arg1;
+                        withOpenGL.setText(fps);
                         break;
                     case Config.UIMsg.UI_UPDATE_LIST:
                         filters.clear();
@@ -257,7 +264,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         };
-        mTextureView = (TextureView) findViewById(R.id.m_texture_view);
+        mTextureView = findViewById(R.id.m_texture_view);
         mSurfaceTextureListener=new TextureView.SurfaceTextureListener() {
             @Override
             public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
@@ -283,6 +290,5 @@ public class MainActivity extends AppCompatActivity {
             }
         };
     }
-
 }
 
