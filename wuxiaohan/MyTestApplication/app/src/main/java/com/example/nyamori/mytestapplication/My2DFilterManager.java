@@ -31,7 +31,7 @@ public class My2DFilterManager {
         outputFilter =new OutputFilter(width,height,xStart,yStart);
     }
 
-    public void changeCamera(int width, int height, int xStart, int yStart){
+    public void changeSize(int width, int height, int xStart, int yStart){
         this.width=width;
         this.height=height;
         inputFilter.setSize(width,height);

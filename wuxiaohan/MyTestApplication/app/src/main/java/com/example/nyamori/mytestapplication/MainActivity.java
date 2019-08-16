@@ -40,13 +40,13 @@ public class MainActivity extends AppCompatActivity {
     private TextureView mTextureView;
     private TextureView.SurfaceTextureListener mSurfaceTextureListener;
     private TextView withOpenGL;
-    private ListView filterList;
     private ArrayAdapter<String> filterListAdapter;
     private List<String> filters;
-    private Surface mOutSurface;
     private Handler mUIHandler;
     private MyCamera myCamera;
-
+    private MyOpenGL myOpenGL;
+    private int surfaceWidth;
+    private int surfaceHeight;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -99,6 +99,9 @@ public class MainActivity extends AppCompatActivity {
         if(myCamera!=null){
             myCamera.destroyCamera();
         }
+        if(myOpenGL!=null){
+            myOpenGL.destroyOpenGL();
+        }
         mUIHandler.removeCallbacksAndMessages(null);
         super.onDestroy();
     }
@@ -109,7 +112,10 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.change_camera).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(myCamera!=null)myCamera.changeCamera();
+                if(myCamera!=null){
+                    myOpenGL.changeCamera(
+                            myCamera.changeCamera(surfaceWidth,surfaceHeight));
+                }
             }
         });
         initEndDrawerList();
@@ -123,48 +129,48 @@ public class MainActivity extends AppCompatActivity {
                 new NavigationView.OnNavigationItemSelectedListener() {
                     @Override
                     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-                        if(myCamera==null){
+                        if(myOpenGL==null){
                             Toast.makeText(MainActivity.this,"尚未初始化",Toast.LENGTH_SHORT).show();
                         }else {
                             switch (item.getItemId()){
                                 case R.id.nav_ext:
-                                    myCamera.addFilter(Config.MsgType.NO_TYPE);
+                                    myOpenGL.addFilter(Config.MsgType.NO_TYPE);
                                     break;
                                 case R.id.nav_beauty:
-                                    myCamera.changeFilterType(Config.MsgType.BEAUTY_TYPE);
+                                    myOpenGL.changeFilterType(Config.MsgType.BEAUTY_TYPE);
                                     break;
                                 case R.id.nav_whitening:
-                                    myCamera.changeFilterType(Config.MsgType.WHITENING_TYPE);
+                                    myOpenGL.changeFilterType(Config.MsgType.WHITENING_TYPE);
                                     break;
                                 case R.id.nav_bw:
-                                    myCamera.addFilter(Config.MsgType.BW_TYPE);
+                                    myOpenGL.addFilter(Config.MsgType.BW_TYPE);
                                     break;
                                 case R.id.nav_mosaic:
-                                    myCamera.addFilter(Config.MsgType.MOSAIC_TYPE);
+                                    myOpenGL.addFilter(Config.MsgType.MOSAIC_TYPE);
                                     break;
                                 case R.id.nav_smooth:
-                                    myCamera.addFilter(Config.MsgType.SMOOTH_TYPE);
+                                    myOpenGL.addFilter(Config.MsgType.SMOOTH_TYPE);
                                     break;
                                 case R.id.nav_obscure:
-                                    myCamera.addFilter(Config.MsgType.OBSCURE_TYPE);
+                                    myOpenGL.addFilter(Config.MsgType.OBSCURE_TYPE);
                                     break;
                                 case R.id.nav_sharpening:
-                                    myCamera.addFilter(Config.MsgType.SHARPENING_TYPE);
+                                    myOpenGL.addFilter(Config.MsgType.SHARPENING_TYPE);
                                     break;
                                 case R.id.nav_edge:
-                                    myCamera.addFilter(Config.MsgType.EDGE_TYPE);
+                                    myOpenGL.addFilter(Config.MsgType.EDGE_TYPE);
                                     break;
                                 case R.id.nav_emboss:
-                                    myCamera.addFilter(Config.MsgType.EMBOSS_TYPE);
+                                    myOpenGL.addFilter(Config.MsgType.EMBOSS_TYPE);
                                     break;
                                 case R.id.nav_add_whitening:
-                                    myCamera.addFilter(Config.MsgType.WHITENING_TYPE);
+                                    myOpenGL.addFilter(Config.MsgType.WHITENING_TYPE);
                                     break;
                                 case R.id.nav_add_beauty:
-                                    myCamera.addFilter(Config.MsgType.BEAUTY_TYPE);
+                                    myOpenGL.addFilter(Config.MsgType.BEAUTY_TYPE);
                                     break;
                                 case R.id.nav_test:
-                                    myCamera.changeFilterType(Config.MsgType.TEST_TYPE);
+                                    myOpenGL.changeFilterType(Config.MsgType.TEST_TYPE);
                                 default:
                                     break;
                             }
@@ -177,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initEndDrawerList() {
-        filterList= findViewById(R.id.filter_list);
+        ListView filterList = findViewById(R.id.filter_list);
         filters.add("没有添加");
         filterListAdapter=new ArrayAdapter<>(this,android.R.layout.simple_list_item_1,filters);
         filterList.setAdapter(filterListAdapter);
@@ -186,11 +192,11 @@ public class MainActivity extends AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 String filterName=filters.get(position);
                 if(filterName.equals(Config.FilterName.BEAUTY_TYPE)){
-                    settingDialogs("磨皮强度",myCamera.getFilter(position));
+                    settingDialogs("磨皮强度",myOpenGL.getFilter(position));
                 }else if(filterName.equals(Config.FilterName.SHARPENING_TYPE)){
-                    settingDialogs("锐化强度",myCamera.getFilter(position));
+                    settingDialogs("锐化强度",myOpenGL.getFilter(position));
                 }else if(filterName.equals(Config.FilterName.WHITENING_TYPE)){
-                    settingDialogs("美白强度",myCamera.getFilter(position));
+                    settingDialogs("美白强度",myOpenGL.getFilter(position));
                 }else {
                     Toast.makeText(MainActivity.this,"暂时不支持该滤镜的设置",Toast.LENGTH_SHORT).show();
                 }
@@ -202,7 +208,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
                 String delete="删除了"+filters.get(position)+"滤镜";
                 Toast.makeText(MainActivity.this,delete,Toast.LENGTH_SHORT).show();
-                myCamera.deleteFilter(position);
+                myOpenGL.deleteFilter(position);
                 mDrawerLayout.closeDrawers();
                 return true;
             }
@@ -258,9 +264,13 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case Config.UIMsg.UI_UPDATE_LIST:
                         filters.clear();
-                        filters.addAll(0,myCamera.getFilterList());
+                        filters.addAll(0,myOpenGL.getFilterList());
                         filterListAdapter.notifyDataSetChanged();
                         break;
+                    case Config.UIMsg.GL_SURFACE_PREPARE:
+                        SurfaceTexture surfaceTexture=(SurfaceTexture)msg.obj;
+                        myCamera.setTargetSurface(new Surface(surfaceTexture));
+                        myCamera.openCamera();
                 }
             }
         };
@@ -268,10 +278,12 @@ public class MainActivity extends AppCompatActivity {
         mSurfaceTextureListener=new TextureView.SurfaceTextureListener() {
             @Override
             public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+                surfaceWidth=width;
+                surfaceHeight=height;
                 Log.v(TAG, "onSurfaceTextureAvailable: size="+width+"x"+height);
-                mOutSurface=new Surface(surface);
-                myCamera=new MyCamera(mUIHandler,mOutSurface,getApplicationContext());
-                myCamera.init(width,height);
+                myCamera=new MyCamera(getApplicationContext());
+                myOpenGL=new MyOpenGL(mUIHandler,new Surface(surface));
+                myOpenGL.init(myCamera.initCamera(width,height));
             }
 
             @Override

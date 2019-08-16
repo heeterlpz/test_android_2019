@@ -39,6 +39,7 @@ public class Config {
     public static class UIMsg{
         public static final int UI_UPDATE_FPS = 0;
         public static final int UI_UPDATE_LIST=1;
+        public static final int GL_SURFACE_PREPARE=2;
     }
 
     public static class CAMERA_TYPE{
