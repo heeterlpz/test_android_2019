@@ -41,5 +41,5 @@ void main()
     // rgba   
     vec4 blur =vec4(rgb *1.0 /21.0, currentColor.a);
     vec4 highPassColor = currentColor - blur;
-    gl_FragColor = highPassColor;
+    gl_FragColor = vec4(highPassColor.rgb,1.0);
 }

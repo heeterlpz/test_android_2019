@@ -6,12 +6,12 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-
-    <LinearLayout
+    <RelativeLayout
+        android:id="@+id/camera"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="horizontal"
-        android:id="@+id/camera">
-    </LinearLayout>
+        android:orientation="vertical">
+    </RelativeLayout>
+
 
 </android.support.constraint.ConstraintLayout>
