@@ -8,7 +8,6 @@ import com.example.nyamori.gles.GlUtil;
 import com.example.nyamori.mytestapplication.filters.*;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class My2DFilterManager {

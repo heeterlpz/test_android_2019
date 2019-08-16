@@ -123,8 +123,7 @@ public class MyOpenGL {
 
     private void updateImg() {
         mSurfaceTexture.updateTexImage();//更新了信息
-        //设置了view的大小和起始坐标
-        my2DFilterManager.draw(mTextureID);
+        my2DFilterManager.draw(mTextureID);//绘制的细节过程是manager管理的
         mWindowSurface.swapBuffers();
         fpsCount++;
         long nowTime=System.currentTimeMillis();

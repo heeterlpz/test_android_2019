@@ -61,7 +61,6 @@ public class MyCamera {
                     if(facing!=null&&facing==CameraCharacteristics.LENS_FACING_BACK)continue;
                 }
                 this.cameraID=cameraID;
-                // TODO: 19-8-5 获取相机角度
                 //获取预览尺寸
                 if(width>height){
                     mPreviewSize=getPreferredPreviewSize(map.getOutputSizes(SurfaceTexture.class),width,height);
@@ -78,6 +77,10 @@ public class MyCamera {
             e.printStackTrace();
         }
         return new ViewPort(0,0,mPreviewSize.getWidth(),mPreviewSize.getHeight());
+    }
+
+    public void setTargetSurface(Surface surface) {
+        targetSurface=surface;
     }
 
     public ViewPort changeCamera(int width,int height){
@@ -103,7 +106,7 @@ public class MyCamera {
     public void openCamera() {
         try {
             if (ActivityCompat.checkSelfPermission(mContext, android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                return;
+                throw new RuntimeException("no camera permission");
             }else {
                 mCameraManager.openCamera(cameraID, deviceStateCallback, mCameraHandler);
             }
@@ -182,7 +185,4 @@ public class MyCamera {
         return sizes[0];
     }
 
-    public void setTargetSurface(Surface surface) {
-        targetSurface=surface;
-    }
 }
