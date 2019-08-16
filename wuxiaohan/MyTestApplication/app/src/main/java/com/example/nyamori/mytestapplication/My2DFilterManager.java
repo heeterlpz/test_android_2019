@@ -2,11 +2,13 @@ package com.example.nyamori.mytestapplication;
 
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
+import android.util.Log;
 
 import com.example.nyamori.gles.GlUtil;
 import com.example.nyamori.mytestapplication.filters.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class My2DFilterManager {
@@ -59,16 +61,22 @@ public class My2DFilterManager {
         if(typeCode==Config.MsgType.BEAUTY_TYPE){
             addFilter(typeCode);
             SharpeningFilter sharpeningFilter=new SharpeningFilter(width,height);
-            sharpeningFilter.setSharpeningLevel(1);
+            sharpeningFilter.setLevel(1);
             filterList.add(sharpeningFilter);
             filterTypeList.add(Config.FilterName.SHARPENING_TYPE);
             WhiteningFilter whiteningFilter=new WhiteningFilter(width,height);
-            whiteningFilter.setBeta(4.0f);
+            whiteningFilter.setLevel(4);
             filterList.add(whiteningFilter);
             filterTypeList.add(Config.FilterName.WHITENING_TYPE);
         }else {
             addFilter(typeCode);
         }
+    }
+
+    public void deleteFilter(int position){
+        filterList.remove(position);
+        filterTypeList.remove(position);
+        Log.d(TAG, "deleteFilter: now list"+ filterTypeList);
     }
 
     public void addFilter(int typeCode){
@@ -83,7 +91,7 @@ public class My2DFilterManager {
                 break;
             case Config.MsgType.SHARPENING_TYPE:
                 SharpeningFilter sharpeningFilter=new SharpeningFilter(width,height);
-                sharpeningFilter.setSharpeningLevel(4);
+                sharpeningFilter.setLevel(4);
                 filterList.add(sharpeningFilter);
                 filterTypeList.add(Config.FilterName.SHARPENING_TYPE);
                 break;
@@ -119,7 +127,7 @@ public class My2DFilterManager {
                 break;
             case Config.MsgType.WHITENING_TYPE:
                 WhiteningFilter whiteningFilter=new WhiteningFilter(width,height);
-                whiteningFilter.setBeta(5.0f);
+                whiteningFilter.setLevel(5);
                 filterList.add(whiteningFilter);
                 filterTypeList.add(Config.FilterName.WHITENING_TYPE);
                 break;
@@ -163,13 +171,19 @@ public class My2DFilterManager {
         inputFilter.draw(preTexture);
         preTexture=inputFilter.getTexture();
         for(BaseFilter filter:filterList){
-            filter.draw(preTexture);
-            preTexture=filter.getTexture();
+            if(!filter.isLevelZero()){
+                filter.draw(preTexture);
+                preTexture=filter.getTexture();
+            }
         }
         outputFilter.draw(preTexture);
     }
 
     public List<String> getFilterTypeList() {
         return filterTypeList;
+    }
+
+    public BaseFilter getFilter(int position) {
+        return filterList.get(position);
     }
 }

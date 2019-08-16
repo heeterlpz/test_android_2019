@@ -31,8 +31,27 @@ public class BeautyFilter extends BaseFilter {
         GLES20.glUniform1f(beautyLevelLoc,beautyLevel);
     }
 
-    public void setBeautyLevel(int level){
-        if(level<19)beautyLevel=1.0f-level*0.05f;
-        else beautyLevel=0.05f;
+    @Override
+    public void setLevel(int newLevel) {
+        if(newLevel==0){
+            isLevelZero=true;
+            beautyLevel=1.05f;
+        }
+        else {
+            isLevelZero=false;
+            if(newLevel<20)beautyLevel=1.05f-newLevel*0.05f;
+            else beautyLevel=0.05f;
+        }
+    }
+
+    @Override
+    public int getLevelMax() {
+        return 20;
+    }
+
+    @Override
+    public int getLevel() {
+        if(beautyLevel==0.05f)return 19;
+        else return (int)((1-beautyLevel)/0.05f);
     }
 }

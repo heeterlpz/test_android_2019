@@ -29,7 +29,7 @@ public class SharpeningFilter extends BaseFilter{
         sharpeningLevelLoc=GLES20.glGetUniformLocation(mProgramHandle, "level");
         // initialize default values
         setTexSize(512, 512);
-        setSharpeningLevel(1);
+        setLevel(1);
     }
 
     @Override
@@ -39,9 +39,27 @@ public class SharpeningFilter extends BaseFilter{
         GLES20.glUniform1f(sharpeningLevelLoc,sharpeningLevel);
     }
 
-    public void setSharpeningLevel(int level){
-        if(level<8)sharpeningLevel=4.5f-0.5f*level;
-        else sharpeningLevel=0.5f;
+    @Override
+    public void setLevel(int newLevel) {
+        if(newLevel==0){
+            isLevelZero=true;
+            sharpeningLevel=4.5f;
+        }
+        else {
+            isLevelZero=false;
+            if(newLevel<8)sharpeningLevel=4.5f-0.5f*newLevel;
+            else sharpeningLevel=0.5f;
+        }
     }
 
+    @Override
+    public int getLevelMax() {
+        return 8;
+    }
+
+    @Override
+    public int getLevel() {
+        if(sharpeningLevel==0.5f)return 8;
+        else return (int)((4.5f-sharpeningLevel)/0.5f);
+    }
 }

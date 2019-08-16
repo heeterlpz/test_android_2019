@@ -30,8 +30,26 @@ public class WhiteningFilter extends BaseFilter {
         GLES20.glUniform1f(betaLoc,beta);
     }
 
+    @Override
+    public void setLevel(int newLevel) {
+        if(newLevel==0){
+            isLevelZero=true;
+            beta=0;
+        }
+        else {
+            isLevelZero=false;
+            if(newLevel<=2)newLevel=2;
+            this.beta=newLevel;
+        }
+    }
 
-    public void setBeta(float beta) {
-        this.beta = beta;
+    @Override
+    public int getLevelMax() {
+        return 7;
+    }
+
+    @Override
+    public int getLevel() {
+        return (int)beta;
     }
 }

@@ -1,5 +1,7 @@
 package com.example.nyamori.mytestapplication;
 
+import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
 import android.os.Bundle;
@@ -10,8 +12,10 @@ import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.Surface;
 import android.view.TextureView;
@@ -19,8 +23,11 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.example.nyamori.mytestapplication.filters.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,6 +66,40 @@ public class MainActivity extends AppCompatActivity {
             initSurfaceView();
             ShaderLoader.getInstance(this);
         }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if(requestCode==1){
+            for(int i=0;i<permissions.length;i++){
+                if(grantResults[i]==PackageManager.PERMISSION_GRANTED){
+                    filters=new ArrayList<>();
+                    initDrawer();
+                    initSurfaceView();
+                    ShaderLoader.getInstance(this);
+                }
+            }
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if(myCamera!=null){
+            myCamera.destroyCamera();
+        }
+        super.onDestroy();
     }
 
     private void initDrawer() {
@@ -139,43 +180,64 @@ public class MainActivity extends AppCompatActivity {
         filterList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String temp="点击了"+filters.get(position)+"滤镜";
-                Toast.makeText(MainActivity.this, temp,Toast.LENGTH_SHORT).show();
+                String filterName=filters.get(position);
+                if(filterName.equals(Config.FilterName.BEAUTY_TYPE)){
+                    settingDialogs("磨皮强度",myCamera.getFilter(position));
+                }else if(filterName.equals(Config.FilterName.SHARPENING_TYPE)){
+                    settingDialogs("锐化强度",myCamera.getFilter(position));
+                }else if(filterName.equals(Config.FilterName.WHITENING_TYPE)){
+                    settingDialogs("美白强度",myCamera.getFilter(position));
+                }else {
+                    Toast.makeText(MainActivity.this,"暂时不支持该滤镜的设置",Toast.LENGTH_SHORT).show();
+                }
                 mDrawerLayout.closeDrawers();
+            }
+        });
+        filterList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                Toast.makeText(MainActivity.this,"删除滤镜",Toast.LENGTH_SHORT).show();
+                myCamera.deleteFilter(position);
+                return true;
             }
         });
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if(requestCode==1){
-            for(int i=0;i<permissions.length;i++){
-                if(grantResults[i]==PackageManager.PERMISSION_GRANTED){
-                    withOpenGL=(TextView)findViewById(R.id.with_OpenGL);
-                    initSurfaceView();
-                }
+    public void settingDialogs(String title, final BaseFilter filter){
+        final AlertDialog.Builder customizeDialog =
+                new AlertDialog.Builder(MainActivity.this);
+        final View dialogView = LayoutInflater.from(MainActivity.this)
+                .inflate(R.layout.dialog_level_setting,null);
+        TextView maxProgressText=dialogView.findViewById(R.id.max_progress);
+        final TextView nowProgressText=dialogView.findViewById(R.id.now_progress);
+        final SeekBar levelBar=dialogView.findViewById(R.id.level_bar);
+        maxProgressText.setText(""+filter.getLevelMax());
+        nowProgressText.setText(""+filter.getLevel());
+        levelBar.setProgress(filter.getLevel());
+        levelBar.setMax(filter.getLevelMax());
+        levelBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                nowProgressText.setText(""+progress);
+                filter.setLevel(progress);
             }
-        }
-    }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
-    }
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-    }
-
-    @Override
-    protected void onDestroy() {
-        if(myCamera!=null){
-            myCamera.destroyCamera();
-        }
-        super.onDestroy();
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
+        });
+        customizeDialog.setTitle(title);
+        customizeDialog.setView(dialogView);
+        customizeDialog.setPositiveButton("确认", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+            }
+        });
+        customizeDialog.show();
     }
 
     private void initSurfaceView() {

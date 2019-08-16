@@ -26,8 +26,6 @@ public class BaseFilter {
     protected int width;
     protected int height;
 
-    protected int muMVPMatrixLoc;
-    protected int muTexMatrixLoc;
     protected int maPositionLoc;
     protected int maTextureCoordLoc;
 
@@ -40,10 +38,16 @@ public class BaseFilter {
 
     protected float[] mTexOffset;
 
-    public BaseFilter(){ }
+    public boolean isLevelZero() {
+        return isLevelZero;
+    }
+
+    protected boolean isLevelZero=false;
+
+    public BaseFilter(){}
 
     public BaseFilter(int width, int height){
-        mProgramHandle = ShaderLoader.getInstance().loadShader(R.raw.fragment_shader_ext);
+        mProgramHandle = ShaderLoader.getInstance().loadShader(R.raw.fragment_shader_2d);
         getLocation();
         chooseSize(width,height);
         createFrame();
@@ -61,6 +65,17 @@ public class BaseFilter {
 
     public void setSize(int width,int height){
         chooseSize(width,height);
+    }
+
+    public void setLevel(int newLevel){
+    }
+
+    public int getLevelMax(){
+        return 0;
+    }
+
+    public int getLevel(){
+        return 0;
     }
 
     public void chooseSize(int width,int height){

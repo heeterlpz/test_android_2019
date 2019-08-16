@@ -23,6 +23,7 @@ import android.widget.Toast;
 import com.example.nyamori.gles.EglCore;
 import com.example.nyamori.gles.GlUtil;
 import com.example.nyamori.gles.WindowSurface;
+import com.example.nyamori.mytestapplication.filters.BaseFilter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -147,6 +148,11 @@ public class MyCamera {
         mOpenGLHandler.obtainMessage(Config.OPenGLMsg.MSG_CHANGE_TYPE,comboType,0).sendToTarget();
     }
 
+    public void deleteFilter(int position){
+        my2DFilterManager.deleteFilter(position);
+        mUIHandler.obtainMessage(Config.UIMsg.UI_UPDATE_LIST).sendToTarget();
+    }
+
     public void addFilter(int programType){
         mOpenGLHandler.obtainMessage(Config.OPenGLMsg.MSG_ADD_FILTER,programType,0).sendToTarget();
     }
@@ -154,6 +160,8 @@ public class MyCamera {
     public List<String> getFilterList(){
         return my2DFilterManager.getFilterTypeList();
     }
+
+    public BaseFilter getFilter(int position){return my2DFilterManager.getFilter(position);}
 
     private void initHandler() {
         HandlerThread handlerThreadCamera = new HandlerThread("Camera");

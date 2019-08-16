@@ -4,11 +4,18 @@ import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 
 import com.example.nyamori.mytestapplication.MyFrameRect;
+import com.example.nyamori.mytestapplication.R;
+import com.example.nyamori.mytestapplication.ShaderLoader;
 
 public class InputFilter extends BaseFilter {
 
     public InputFilter(int width,int height){
-        super(width,height);
+        super();
+        mProgramHandle = ShaderLoader.getInstance().loadShader(R.raw.fragment_shader_ext);
+        getLocation();
+        chooseSize(width,height);
+        createFrame();
+        initRect();
     }
 
     @Override
