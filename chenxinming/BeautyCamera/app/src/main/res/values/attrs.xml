@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="SeekBar">
+        <attr name="layout_width"  value="match_parent"/>
+        <attr name="layout_height" value="match_parent"/>
+        <attr name="layout_alignParentBottom" value="true"/>
+    </declare-styleable>
+</resources>
