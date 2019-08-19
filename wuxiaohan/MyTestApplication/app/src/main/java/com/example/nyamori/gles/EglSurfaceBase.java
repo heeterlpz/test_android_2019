@@ -149,6 +149,26 @@ public class EglSurfaceBase {
         mEglCore.setPresentationTime(mEGLSurface, nsecs);
     }
 
+    public Bitmap getFrame() {
+        if (!mEglCore.isCurrent(mEGLSurface)) {
+            throw new RuntimeException("Expected EGL context/surface is not current");
+        }
+
+        int width = getWidth();
+        int height = getHeight();
+        ByteBuffer buf = ByteBuffer.allocateDirect(width * height * 4);
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+        GLES20.glReadPixels(0, 0, width, height,
+                GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buf);
+        GlUtil.checkGlError("glReadPixels");
+        buf.rewind();
+
+        Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        bmp.copyPixelsFromBuffer(buf);
+
+        return bmp;
+    }
+
     /**
      * Saves the EGL surface to a file.
      * <p>
@@ -170,9 +190,7 @@ public class EglSurfaceBase {
         // Making this even more interesting is the upside-down nature of GL, which means
         // our output will look upside down relative to what appears on screen if the
         // typical GL conventions are used.
-
         String filename = file.toString();
-
         int width = getWidth();
         int height = getHeight();
         ByteBuffer buf = ByteBuffer.allocateDirect(width * height * 4);
@@ -184,9 +202,9 @@ public class EglSurfaceBase {
 
         BufferedOutputStream bos = null;
         try {
-            bos = new BufferedOutputStream(new FileOutputStream(filename));
             Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
             bmp.copyPixelsFromBuffer(buf);
+            bos = new BufferedOutputStream(new FileOutputStream(filename));
             bmp.compress(Bitmap.CompressFormat.PNG, 90, bos);
             bmp.recycle();
         } finally {
