@@ -51,13 +51,12 @@ public class CameraRenderer implements GLSurfaceView.Renderer{
     private int type;
     private int type1;
     private Handler mHandle;
-    private float mix=1;
-    private int brightLevelLocation = -1;
-    private int betaLevelLocation = -1;
     private int alphaLevelLocation = -1;
-    private float brightLevel;
-    private float betaLevel;
     private float alphaLevel;
+    private int betaLevelLocation = -1;
+    private float betaLevel;
+    private int redLevelLocation = -1;
+    private float redLevel;
 
     public void init(CameraGLSurfaceView glSurfaceView, Camera camera, boolean isPreviewStarted, Context context, int type, Handler mHandle) {
         mContext = context;
@@ -118,17 +117,17 @@ public class CameraRenderer implements GLSurfaceView.Renderer{
         aTextureCoordLocation = glGetAttribLocation(mShaderProgram, FilterEngine.TEXTURE_COORD_ATTRIBUTE);
         uTextureMatrixLocation = glGetUniformLocation(mShaderProgram, FilterEngine.TEXTURE_MATRIX_UNIFORM);
         uTextureSamplerLocation = glGetUniformLocation(mShaderProgram, FilterEngine.TEXTURE_SAMPLER_UNIFORM);
-        brightLevelLocation = glGetUniformLocation(mShaderProgram, FilterEngine.BEIGHT_LEVEL);
-        betaLevelLocation = glGetUniformLocation(mShaderProgram,FilterEngine.BETA_LEVEL);
         alphaLevelLocation = glGetUniformLocation(mShaderProgram,FilterEngine.ALPHA_LEVEL);
+        betaLevelLocation = glGetUniformLocation(mShaderProgram,FilterEngine.BETAL_LEVEL);
+        redLevelLocation = glGetUniformLocation(mShaderProgram,FilterEngine.RED_LEVEL);
 
 
         glActiveTexture(GLES20.GL_TEXTURE0);
         glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, mOESTextureId);
         glUniform1i(uTextureSamplerLocation, 0);
-        glUniform1f(brightLevelLocation,brightLevel);
-        glUniform1f(betaLevelLocation,betaLevel);
         glUniform1f(alphaLevelLocation,alphaLevel);
+        glUniform1f(betaLevelLocation,betaLevel);
+        glUniform1f(redLevelLocation,redLevel);
         glUniformMatrix4fv(uTextureMatrixLocation, 1, false, transformMatrix, 0);
 
         if (mDataBuffer != null) {
@@ -188,15 +187,15 @@ public class CameraRenderer implements GLSurfaceView.Renderer{
         this.type=type;
     }
 
-    public void setBrightLevel(float brightLevel){
-        this.brightLevel=brightLevel;
+    public void setAlphaLevel(float alphaLevel){
+        this.alphaLevel=alphaLevel;
     }
 
     public void setBetaLevel(float betaLevel){
-        this.betaLevel=betaLevel;
+        this.betaLevel = betaLevel;
     }
 
-    public void setAlphaLevel(float alphaLevel){
-        this.alphaLevel=alphaLevel;
+    public void setRedLevel(float redLevel){
+        this.redLevel = redLevel;
     }
 }

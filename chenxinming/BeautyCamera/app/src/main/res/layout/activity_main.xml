@@ -7,10 +7,52 @@
     tools:context=".MainActivity">
 
     <RelativeLayout
-        android:id="@+id/camera"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="match_parent">
+        <RelativeLayout
+            android:id="@+id/camera"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+        </RelativeLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="210dp"
+            android:orientation="vertical"
+            android:layout_alignParentBottom="true">
+            <TextView
+                android:id="@+id/whiteText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="美白程度0%"
+                android:textColor="@color/colorAccent"
+                android:gravity="center"/>
+            <SeekBar
+                android:id="@+id/whiteSeekBar"
+                android:layout_width="match_parent"
+                android:layout_height="50dp" />
+            <TextView
+                android:id="@+id/redText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="红润程度0%"
+                android:textColor="@color/colorAccent"
+                android:gravity="center"/>
+            <SeekBar
+                android:id="@+id/redSeekBar"
+                android:layout_width="match_parent"
+                android:layout_height="50dp" />
+            <TextView
+                android:id="@+id/buffingText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="磨皮程度0%"
+                android:textColor="@color/colorAccent"
+                android:gravity="center"/>
+            <SeekBar
+                android:id="@+id/buffingSeekBar"
+                android:layout_width="match_parent"
+                android:layout_height="50dp" />
+        </LinearLayout>
     </RelativeLayout>
 
 

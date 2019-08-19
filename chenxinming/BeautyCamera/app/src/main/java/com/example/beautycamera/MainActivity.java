@@ -8,8 +8,10 @@ import android.os.Message;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -25,7 +27,12 @@ public class MainActivity extends AppCompatActivity {
     private static final int MSG_UPDATE_IMG = 0;
     private int mFpsCount=0;
     private long mFpsTime=0;
-    private SeekBar mSeekBar;
+    private SeekBar buffingSeekBar;
+    private SeekBar whiteSeekBar;
+    private SeekBar redSeekBar;
+    private TextView whiteText;
+    private TextView redText;
+    private TextView buffingText;
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
@@ -34,6 +41,13 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         relativeLayout = findViewById(R.id.camera);
+        buffingSeekBar = findViewById(R.id.buffingSeekBar);
+        whiteSeekBar = findViewById(R.id.whiteSeekBar);
+        redSeekBar = findViewById(R.id.redSeekBar);
+        whiteText = findViewById(R.id.whiteText);
+        redText = findViewById(R.id.redText);
+        buffingText = findViewById(R.id.buffingText);
+        shieldSeekBar();
 
         //实例化一个GLSurfaceView
         mGLSurfaceView = new CameraGLSurfaceView(this);
@@ -75,25 +89,26 @@ public class MainActivity extends AppCompatActivity {
         relativeLayout.addView(mInfoView, RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
     }
 
-    public SeekBar addSeekBar(int shaderType){
-        final SeekBar mSeekBar = new SeekBar(this);
-        final int mShaderType = shaderType;
+    public void addSeekBar(final SeekBar mSeekBar, final int mType){
         mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser){
-                switch (mShaderType){
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+
+                switch (mType){
+                    case 0:
+                        mSeekBar.setMax(100);
+                        mGLSurfaceView.getmRenderer().setBetaLevel(mSeekBar.getProgress());
+                        whiteText.setText("美白程度"+mSeekBar.getProgress()+"%");
+                        break;
                     case 1:
                         mSeekBar.setMax(100);
-                        mGLSurfaceView.getmRenderer().setBrightLevel(mSeekBar.getProgress());
+                        mGLSurfaceView.getmRenderer().setRedLevel(mSeekBar.getProgress()/100.0f);
+                        redText.setText("红润程度"+mSeekBar.getProgress()+"%");
                         break;
-                    case 5:
+                    case 2:
                         mSeekBar.setMax(100);
                         mGLSurfaceView.getmRenderer().setAlphaLevel(mSeekBar.getProgress()/100.0f);
-                        break;
-                    case 7:
-                        mSeekBar.setMax(100);
-                        mGLSurfaceView.getmRenderer().setBetaLevel(mSeekBar.getProgress()+2.0f);
+                        buffingText.setText("磨皮程度"+mSeekBar.getProgress()+"%");
                         break;
                     default:
                         break;
@@ -108,10 +123,26 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
 
-
             }
         });
-        return mSeekBar;
+    }
+
+    public void shieldSeekBar(){
+        buffingSeekBar.setVisibility(View.GONE);
+        whiteSeekBar.setVisibility(View.GONE);
+        redSeekBar.setVisibility(View.GONE);
+        whiteText.setVisibility(View.GONE);
+        redText.setVisibility(View.GONE);
+        buffingText.setVisibility(View.GONE);
+    }
+
+    public void showSeekBar(){
+        buffingSeekBar.setVisibility(View.VISIBLE);
+        whiteSeekBar.setVisibility(View.VISIBLE);
+        redSeekBar.setVisibility(View.VISIBLE);
+        whiteText.setVisibility(View.VISIBLE);
+        redText.setVisibility(View.VISIBLE);
+        buffingText.setVisibility(View.VISIBLE);
     }
 
     @Override
@@ -125,64 +156,54 @@ public class MainActivity extends AppCompatActivity {
         switch (item.getItemId()){
             case R.id.menu_original:
                 if(mGLSurfaceView != null) {
-                    relativeLayout.removeView(mSeekBar);
+                    shieldSeekBar();
                     mGLSurfaceView.getmRenderer().setType(0);
                     Toast.makeText(this,"原图像", Toast.LENGTH_SHORT).show();
                 }
                 break;
             case R.id.menu_black_and_white:
                 if(mGLSurfaceView != null){
-                    relativeLayout.removeView(mSeekBar);
+                    shieldSeekBar();
                     mGLSurfaceView.getmRenderer().setType(1);
-                    mSeekBar = addSeekBar(1);
-                    relativeLayout.addView(mSeekBar,RelativeLayout.LayoutParams.MATCH_PARENT,RelativeLayout.LayoutParams.MATCH_PARENT);
                     Toast.makeText(this,"黑白滤镜", Toast.LENGTH_SHORT).show();
                 }
                 break;
             case R.id.menu_sharpen:
                 if(mGLSurfaceView != null){
-                    relativeLayout.removeView(mSeekBar);
+                    shieldSeekBar();
                     mGLSurfaceView.getmRenderer().setType(2);
                     Toast.makeText(this,"锐化", Toast.LENGTH_SHORT).show();
                 }
                 break;
             case R.id.menu_slur:
                 if(mGLSurfaceView != null){
-                    relativeLayout.removeView(mSeekBar);
+                    shieldSeekBar();
                     mGLSurfaceView.getmRenderer().setType(3);
                     Toast.makeText(this,"模糊", Toast.LENGTH_SHORT).show();
                 }
                 break;
             case R.id.menu_africa:
                 if(mGLSurfaceView != null){
-                    relativeLayout.removeView(mSeekBar);
+                    shieldSeekBar();
                     mGLSurfaceView.getmRenderer().setType(4);
                     Toast.makeText(this,"非洲滤镜", Toast.LENGTH_SHORT).show();
                 }
                 break;
             case R.id.menu_beauty:
                 if(mGLSurfaceView != null){
-                    relativeLayout.removeView(mSeekBar);
+                    showSeekBar();
                     mGLSurfaceView.getmRenderer().setType(5);
-                    mSeekBar = addSeekBar(5);
-                    relativeLayout.addView(mSeekBar,RelativeLayout.LayoutParams.MATCH_PARENT,RelativeLayout.LayoutParams.MATCH_PARENT);
+                    addSeekBar(whiteSeekBar,0);
+                    addSeekBar(redSeekBar,1);
+                    addSeekBar(buffingSeekBar,2);
                     Toast.makeText(this,"美颜", Toast.LENGTH_SHORT).show();
                 }
                 break;
             case R.id.menu_quarter:
                 if(mGLSurfaceView != null){
-                    relativeLayout.removeView(mSeekBar);
+                    shieldSeekBar();
                     mGLSurfaceView.getmRenderer().setType(6);
                     Toast.makeText(this,"四分", Toast.LENGTH_SHORT).show();
-                }
-                break;
-            case R.id.menu_towhite:
-                if(mGLSurfaceView != null){
-                    relativeLayout.removeView(mSeekBar);
-                    mGLSurfaceView.getmRenderer().setType(7);
-                    mSeekBar = addSeekBar(7);
-                    relativeLayout.addView(mSeekBar,RelativeLayout.LayoutParams.MATCH_PARENT,RelativeLayout.LayoutParams.MATCH_PARENT);
-                    Toast.makeText(this,"美白", Toast.LENGTH_SHORT).show();
                 }
                 break;
             default:
