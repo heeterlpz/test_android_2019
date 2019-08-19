@@ -92,8 +92,8 @@ public class MyCamera2 {
         return new ViewPort(0,0,mPreviewSize.getWidth(),mPreviewSize.getHeight());
     }
 
-    public void setTargetSurface(Surface surface) {
-        targetSurface=surface;
+    public void setTargetSurface(SurfaceTexture surface) {
+        targetSurface=new Surface(surface);
     }
 
     public ViewPort changeCamera(int width,int height){
