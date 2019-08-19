@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -44,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private List<String> filters;
     private Handler mUIHandler;
     private MyCamera myCamera;
+    private MyCamera2 myCamera2;
     private MyOpenGL myOpenGL;
     private int surfaceWidth;
     private int surfaceHeight;
@@ -96,8 +98,13 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        if(myCamera2 !=null){
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                myCamera2.destroyCamera();
+            }
+        }
         if(myCamera!=null){
-            myCamera.destroyCamera();
+            myCamera.destoryCamera();
         }
         if(myOpenGL!=null){
             myOpenGL.destroyOpenGL();
@@ -112,9 +119,17 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.change_camera).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(myCamera!=null){
-                    myOpenGL.changeCamera(
-                            myCamera.changeCamera(surfaceWidth,surfaceHeight));
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    if(myCamera2 !=null){
+                        myOpenGL.changeCamera(
+                                myCamera2.changeCamera(surfaceWidth,surfaceHeight));
+
+                    }
+                }else {
+                    if(myCamera != null){
+                        myOpenGL.changeCamera(
+                                myCamera.changeCamera(surfaceWidth,surfaceHeight));
+                    }
                 }
             }
         });
@@ -269,8 +284,13 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case Config.UIMsg.GL_SURFACE_PREPARE:
                         SurfaceTexture surfaceTexture=(SurfaceTexture)msg.obj;
-                        myCamera.setTargetSurface(new Surface(surfaceTexture));
-                        myCamera.openCamera();
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            myCamera2.setTargetSurface(new Surface(surfaceTexture));
+                            myCamera2.openCamera();
+                        }else {
+                            myCamera.setTargetSurface(surfaceTexture);
+                            myCamera.openCamera();
+                        }
                 }
             }
         };
@@ -281,9 +301,14 @@ public class MainActivity extends AppCompatActivity {
                 surfaceWidth=width;
                 surfaceHeight=height;
                 Log.v(TAG, "onSurfaceTextureAvailable: size="+width+"x"+height);
-                myCamera=new MyCamera(getApplicationContext());
                 myOpenGL=new MyOpenGL(mUIHandler,new Surface(surface));
-                myOpenGL.init(myCamera.initCamera(width,height));
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    myCamera2 =new MyCamera2(getApplicationContext());
+                    myOpenGL.init(myCamera2.initCamera(width,height));
+                }else {
+                    myCamera=new MyCamera();
+                    myOpenGL.init(myCamera.initCamera(width,height));
+                }
             }
 
             @Override
