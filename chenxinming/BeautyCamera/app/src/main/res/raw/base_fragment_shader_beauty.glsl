@@ -1,7 +1,8 @@
 #extension GL_OES_EGL_image_external : require
 precision mediump float;
 uniform float alphaLevel;
-//uniform float betaLevel;
+uniform float betaLevel;
+uniform float redLevel;
 uniform samplerExternalOES uTextureSampler;
 varying vec2 vTextureCoord;
 void main()
@@ -49,16 +50,18 @@ void main()
 
 
     float lumance = 0.299*currentColor.r + 0.587*currentColor.g + 0.114*currentColor.b;
-
-    float alpha = pow(lumance, alphaLevel);
+    float alpha = 0.0;
+    if(alphaLevel == 0.0){
+        alpha = alphaLevel;
+    }else{
+        alpha = pow(lumance, alphaLevel);
+    }
     vec3 smoothColor = currentColor.rgb + (currentColor.rgb-vec3(highpass,highpass,highpass))*alpha*0.1;
-//    float red = smoothColor.r;
-//    float green = smoothColor.g;
-//    float blue = smoothColor.b;
-//    smoothColor.r=log(red*(betaLevel-1.0)+1.0)/log(betaLevel);
-//    smoothColor.g=log(green*(betaLevel-1.0)+1.0)/log(betaLevel);
-//    smoothColor.b=log(blue*(betaLevel-1.0)+1.0)/log(betaLevel);
-    gl_FragColor  = vec4(smoothColor,1.0);
+    smoothColor = smoothColor*(1.0+betaLevel/200.0);
+    vec3 redColor = 3.0*smoothColor*smoothColor - 2.0*smoothColor*smoothColor*smoothColor;
+    smoothColor = mix(smoothColor,redColor,redLevel);
+    gl_FragColor = vec4(smoothColor,1.0);
+
 
     //计算平均值   
     //本身的点的像素值   
@@ -95,5 +98,15 @@ void main()
 //    // 第三个值越大，在这里融合的图像 越模糊       
 //    vec3 r = mix(currentColor.rgb,blur.rgb,currentIntensity);
 //    gl_FragColor =vec4(r,1.0);
+
+//美白
+//    vec4 color = texture2D(uTextureSampler, vTextureCoord);
+//    float red = color.r;
+//    float green = color.g;
+//    float blue = color.b;
+//    color.r=log(red*(betaLevel-1.0)+1.0)/log(betaLevel);
+//    color.g=log(green*(betaLevel-1.0)+1.0)/log(betaLevel);
+//    color.b=log(blue*(betaLevel-1.0)+1.0)/log(betaLevel);
+//    gl_FragColor = vec4(color.rgb,1.0);
 
 }

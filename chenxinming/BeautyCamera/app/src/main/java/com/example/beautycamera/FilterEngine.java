@@ -75,9 +75,6 @@ public class FilterEngine {
             case 6:
                 fragmentShader = loadShader(GL_FRAGMENT_SHADER, Utils.readShaderFromResource(mContext, R.raw.base_fragment_shader_quarter));
                 break;
-            case 7:
-                fragmentShader = loadShader(GL_FRAGMENT_SHADER, Utils.readShaderFromResource(mContext, R.raw.base_fragment_shader_towhite));
-                break;
             default:
                 break;
         }
@@ -109,10 +106,9 @@ public class FilterEngine {
     public static final String TEXTURE_COORD_ATTRIBUTE = "aTextureCoordinate";
     public static final String TEXTURE_MATRIX_UNIFORM = "uTextureMatrix";
     public static final String TEXTURE_SAMPLER_UNIFORM = "uTextureSampler";
-    public static final String BEIGHT_LEVEL = "brightLevel";
-    public static final String BETA_LEVEL = "betaLevel";
     public static final String ALPHA_LEVEL = "alphaLevel";
-
+    public static final String BETAL_LEVEL = "betaLevel";
+    public static final String RED_LEVEL = "redLevel";
 
     //将顶点和纹理坐标数据使用FloatBuffer来存储，防止内存回收
     public FloatBuffer createBuffer(float[] vertexData) {
