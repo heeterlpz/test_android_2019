@@ -104,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         if(myCamera!=null){
-            myCamera.destoryCamera();
+            myCamera.destroyCamera();
         }
         if(myOpenGL!=null){
             myOpenGL.destroyOpenGL();
