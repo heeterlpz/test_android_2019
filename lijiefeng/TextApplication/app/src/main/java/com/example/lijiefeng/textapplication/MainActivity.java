@@ -41,6 +41,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private RelativeLayout root;
     private VideoView videoView;
     private Timer timer;
+    SharedPreferences barrage0;
+    SharedPreferences barrage1;
     double value = 1.0;
 
     StringBuilder mFormatBuilder = new StringBuilder();
@@ -85,7 +87,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         radioGroup = (RadioGroup) findViewById(R.id.rg);
         radioButton1 = (RadioButton) findViewById(R.id.rb1);
         radioButton2 = (RadioButton) findViewById(R.id.rb2);
-
+        barrage0 = this.getSharedPreferences("jieyou", MODE_APPEND);
+        barrage1 = this.getSharedPreferences("jiqiao", MODE_APPEND);
     }
 
     //点击按钮触发事件
@@ -147,32 +150,55 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     //存放数据
     private void saveData(String time, String barragecontent) {
-
-        SharedPreferences barrage = this.getSharedPreferences("barrage", MODE_APPEND);
-        SharedPreferences.Editor editor = barrage.edit();
-        Map<String, String> barragemap = (Map<String, String>) barrage.getAll();
-        Set<Map.Entry<String, String>> entryset = barragemap.entrySet();
-        for (Map.Entry<String, String> entry : entryset) {
-            if (entry.getKey().equals(time)) {
-                barragecontent = entry.getValue() + "," + barragecontent;
+        if(radioGroup.getCheckedRadioButtonId() == R.id.rb1){
+            SharedPreferences.Editor editor = barrage0.edit();
+            Map<String, String> barragemap = (Map<String, String>) barrage0.getAll();
+            Set<Map.Entry<String, String>> entryset = barragemap.entrySet();
+            for (Map.Entry<String, String> entry : entryset) {
+                if (entry.getKey().equals(time)) {
+                    barragecontent = entry.getValue() + "," + barragecontent;
+                }
             }
+            editor.putString(time, barragecontent);
+            editor.apply();
+        }else {
+            SharedPreferences.Editor editor = barrage1.edit();
+            Map<String, String> barragemap = (Map<String, String>) barrage1.getAll();
+            Set<Map.Entry<String, String>> entryset = barragemap.entrySet();
+            for (Map.Entry<String, String> entry : entryset) {
+                if (entry.getKey().equals(time)) {
+                    barragecontent = entry.getValue() + "," + barragecontent;
+                }
+            }
+            editor.putString(time, barragecontent);
+            editor.apply();
         }
-        editor.putString(time, barragecontent);
-        editor.apply();
     }
 
     //获取键值,发送库存弹幕
     private void kv(String time) {
-        SharedPreferences barrage = this.getSharedPreferences("barrage", MODE_APPEND);
-        Map<String, String> barragemap = (Map<String, String>) barrage.getAll();
-        Set<Map.Entry<String, String>> entryset = barragemap.entrySet();
-        for (Map.Entry<String, String> entry : entryset) {
-            if (entry.getKey().equals(time)) {
-                for(String barrage0 : entry.getValue().split(",")){
-                    sendstoragebarrage(barrage0);
+        if (radioGroup.getCheckedRadioButtonId() == R.id.rb1) {
+            Map<String, String> barragemap = (Map<String, String>) barrage0.getAll();
+            Set<Map.Entry<String, String>> entryset = barragemap.entrySet();
+            for (Map.Entry<String, String> entry : entryset) {
+                if (entry.getKey().equals(time)) {
+                    for(String barrage0 : entry.getValue().split(",")){
+                        sendstoragebarrage(barrage0);
+                    }
+                }
+            }
+        }else {
+            Map<String, String> barragemap = (Map<String, String>) barrage1.getAll();
+            Set<Map.Entry<String, String>> entryset = barragemap.entrySet();
+            for (Map.Entry<String, String> entry : entryset) {
+                if (entry.getKey().equals(time)) {
+                    for(String barrage0 : entry.getValue().split(",")){
+                        sendstoragebarrage(barrage0);
+                    }
                 }
             }
         }
+
     }
 
     //补间动画实现弹幕滚动效果
