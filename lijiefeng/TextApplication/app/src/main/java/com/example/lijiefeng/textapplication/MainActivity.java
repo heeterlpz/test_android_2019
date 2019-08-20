@@ -16,6 +16,7 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.VideoView;
 
 import java.util.Formatter;
@@ -113,7 +114,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         designBarrage(tv, root);
     }
 
-    //添加,发送弹幕
+    //发送库存弹幕
     private void sendstoragebarrage(String barrages) {
         TextView tv0 = new TextView(this);
         tv0.setTextSize(20);
@@ -152,11 +153,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     //补间动画实现弹幕滚动效果
     private void designBarrage(TextView textView, RelativeLayout relativeLayout) {
+        RadioButton RB = (RadioButton)findViewById(radioGroup1.getCheckedRadioButtonId());
         textView.measure(0, 0);
         int measuredWidth = textView.getMeasuredWidth();  //获取TextView的宽度
         int measuredHeight = textView.getMeasuredHeight();//获取TextView的高度
         int layoutHeight = relativeLayout.getBottom() - relativeLayout.getTop();  //获取布局的宽度
-        int y = (int) (Math.random() * layoutHeight );  //设置弹幕随机产生的Y坐标
+        int y = (int) (Math.random() * layoutHeight);  //设置弹幕随机产生的Y坐标
         if (y > layoutHeight - measuredHeight) {  // 出现在布局底部时坐标要扣除TextView的高度
             y -= measuredHeight;
         }
