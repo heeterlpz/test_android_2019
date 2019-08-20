@@ -66,6 +66,16 @@
                 android:textSize="20sp"
                 app:layout_constraintHorizontal_bias="0.697" />
 
+            <VideoView
+                android:id="@+id/videoView"
+                android:layout_width="350dp"
+                android:layout_height="300dp"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:layout_marginTop="180dp"
+                app:layout_constraintHorizontal_bias="0.491" />
+
             <RelativeLayout
                 android:id="@+id/root"
                 android:layout_width="350dp"
@@ -76,19 +86,12 @@
                 android:layout_centerVertical="true"
                 android:layout_centerHorizontal="true"
                 android:layout_marginTop="180dp">
-
-                <VideoView
-                    android:id="@+id/videoView"
-                    android:layout_width="350dp"
-                    android:layout_height="300dp"
-                    android:layout_alignParentTop="true"
-                    android:layout_alignParentBottom="true"
-                    android:layout_alignParentLeft="true"
-                    android:layout_alignParentRight="true"
-                    app:layout_constraintLeft_toLeftOf="parent"
-                    app:layout_constraintRight_toRightOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
             </RelativeLayout>
+
+                <!--android:layout_alignParentTop="true"-->
+                <!--android:layout_alignParentBottom="true"-->
+                <!--android:layout_alignParentLeft="true"-->
+                <!--android:layout_alignParentRight="true"-->
 
             <RadioGroup
                 android:id="@+id/rg"
@@ -103,7 +106,7 @@
                 <RadioButton
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/kuaishou"
+                    android:text="@string/jieyou"
                     android:id="@+id/rb1"
                     android:checked="true"
                     app:layout_constraintLeft_toLeftOf="parent"
@@ -113,7 +116,7 @@
                 <RadioButton
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/xiaxue"
+                    android:text="@string/lanqiu"
                     android:id="@+id/rb2"
                     app:layout_constraintLeft_toLeftOf="parent"
                     app:layout_constraintRight_toRightOf="parent"
@@ -128,7 +131,7 @@
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintRight_toRightOf="parent"
                 android:orientation="horizontal"
-                android:checkedButton="@+id/RB1"
+                android:checkedButton="@+id/RB4"
                 android:layout_marginTop="135dp">
                 <RadioButton
                     android:id="@+id/RB1"
