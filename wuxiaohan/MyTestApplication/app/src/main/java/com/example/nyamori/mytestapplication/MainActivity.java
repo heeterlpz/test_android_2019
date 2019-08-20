@@ -285,7 +285,7 @@ public class MainActivity extends AppCompatActivity {
                     case Config.UIMsg.GL_SURFACE_PREPARE:
                         SurfaceTexture surfaceTexture=(SurfaceTexture)msg.obj;
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                            myCamera2.setTargetSurface(new Surface(surfaceTexture));
+                            myCamera2.setTargetSurface(surfaceTexture);
                             myCamera2.openCamera();
                         }else {
                             myCamera.setTargetSurface(surfaceTexture);
