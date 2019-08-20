@@ -4,7 +4,6 @@ import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.support.annotation.NonNull;
 import android.util.Log;
-import android.util.Size;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -93,7 +92,7 @@ public class MyCamera {
         }
     }
 
-    public void destoryCamera(){
+    public void destroyCamera(){
         if(mCamera!=null){
             mCamera.release();
             mCamera=null;
