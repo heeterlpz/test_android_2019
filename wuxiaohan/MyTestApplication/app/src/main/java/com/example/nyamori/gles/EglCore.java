@@ -23,8 +23,10 @@ import android.opengl.EGLContext;
 import android.opengl.EGLDisplay;
 import android.opengl.EGLExt;
 import android.opengl.EGLSurface;
+import android.os.Build;
 import android.util.Log;
 import android.view.Surface;
+
 
 /**
  * Core EGL state (display, context, config).
@@ -84,6 +86,7 @@ public final class EglCore {
         if (mEGLDisplay == EGL14.EGL_NO_DISPLAY) {
             throw new RuntimeException("unable to get EGL14 display");
         }
+
         int[] version = new int[2];
         if (!EGL14.eglInitialize(mEGLDisplay, version, 0, version, 1)) {
             mEGLDisplay = null;
@@ -99,19 +102,16 @@ public final class EglCore {
                         EGL14.EGL_CONTEXT_CLIENT_VERSION, 3,
                         EGL14.EGL_NONE
                 };
-                EGLContext context = EGL14.eglCreateContext(mEGLDisplay, config, sharedContext,
-                        attrib3_list, 0);
-
+                EGLContext context = EGL14.eglCreateContext(mEGLDisplay, config, sharedContext, attrib3_list, 0);
                 if (EGL14.eglGetError() == EGL14.EGL_SUCCESS) {
-                    //Log.d(TAG, "Got GLES 3 config");
                     mEGLConfig = config;
                     mEGLContext = context;
                     mGlVersion = 3;
                 }
             }
         }
+
         if (mEGLContext == EGL14.EGL_NO_CONTEXT) {  // GLES 2 only, or GLES 3 attempt failed
-            //Log.d(TAG, "Trying GLES 2");
             EGLConfig config = getConfig(flags, 2);
             if (config == null) {
                 throw new RuntimeException("Unable to find a suitable EGLConfig");
@@ -120,9 +120,8 @@ public final class EglCore {
                     EGL14.EGL_CONTEXT_CLIENT_VERSION, 2,
                     EGL14.EGL_NONE
             };
-            EGLContext context = EGL14.eglCreateContext(mEGLDisplay, config, sharedContext,
-                    attrib2_list, 0);
-            checkEglError("eglCreateContext");
+            EGLContext context = EGL14.eglCreateContext(mEGLDisplay, config, sharedContext, attrib2_list, 0);
+            checkEglError("eglCreateContext2");
             mEGLConfig = config;
             mEGLContext = context;
             mGlVersion = 2;
@@ -130,9 +129,8 @@ public final class EglCore {
 
         // Confirm with query.
         int[] values = new int[1];
-        EGL14.eglQueryContext(mEGLDisplay, mEGLContext, EGL14.EGL_CONTEXT_CLIENT_VERSION,
-                values, 0);
-        Log.d(TAG, "EGLContext created, client version " + values[0]);
+        EGL14.eglQueryContext(mEGLDisplay, mEGLContext, EGL14.EGL_CONTEXT_CLIENT_VERSION, values, 0);
+        Log.d(TAG, "EGLContext created mGlVersion " + mGlVersion + ", client version " + values[0]);
     }
 
     /**
@@ -232,9 +230,7 @@ public final class EglCore {
         }
 
         // Create a window surface, and attach it to the Surface we received.
-        int[] surfaceAttribs = {
-                EGL14.EGL_NONE
-        };
+        int[] surfaceAttribs = { EGL14.EGL_NONE };
         EGLSurface eglSurface = EGL14.eglCreateWindowSurface(mEGLDisplay, mEGLConfig, surface,
                 surfaceAttribs, 0);
         checkEglError("eglCreateWindowSurface");
@@ -311,7 +307,9 @@ public final class EglCore {
      * Sends the presentation time stamp to EGL.  Time is expressed in nanoseconds.
      */
     public void setPresentationTime(EGLSurface eglSurface, long nsecs) {
-        EGLExt.eglPresentationTimeANDROID(mEGLDisplay, eglSurface, nsecs);
+        // android 4.4 support
+        if (Build.VERSION.SDK_INT >= 18)
+            EGLExt.eglPresentationTimeANDROID(mEGLDisplay, eglSurface, nsecs);
     }
 
     /**
