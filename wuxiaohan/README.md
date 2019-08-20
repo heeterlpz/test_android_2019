@@ -15,7 +15,7 @@ Android studio 3.4.2
 Gradle 5.1.1
 
 ###程序类图
-![类图 ](/home/nyamori/documents/class_picture.png  "类图")
+![类图](https://b2.bmp.ovh/imgs/2019/08/3ad29139435c7c3b.png)
 ###/gles/
 ---
 OpenGL ES相关的类，来自Google的grafika项目的/gles/ 文件夹
@@ -106,7 +106,7 @@ filter的基类,所有filter都继承自这个基类。
 input filter使用samplerExternalOES，其上一个纹理由外部输入；
 output filter使用sampler2D，没有自己的纹理
 
-###程序流程图![ 流程](/home/nyamori/下载/未命名文件.png  "流程")
+###程序流程图![流程](https://b2.bmp.ovh/imgs/2019/08/db571b72d6d5c12b.png)
 
 ###关键过程
 ####离屏渲染
@@ -114,7 +114,7 @@ output filter使用sampler2D，没有自己的纹理
 OpenGL ES允许使用帧缓存（Frame Buffer Object）使得渲染后的输出不只是可以输出到屏幕上，还可以输出到帧缓存当中，从而实现离屏渲染。
 
 在camera的预览当中使用帧缓存，可以成功将整个绘制过程转换。如下图：
-![结构对比](/home/nyamori/下载/FireShot/帧缓存.png  "帧缓存")
+![结构对比](https://b2.bmp.ovh/imgs/2019/08/12916fe166f6dc10.png)
 
 因此，选择使用FBO之后，我们就可以拆解整个绘制过程，先将预览图片存储到内部，经过渲染之后再输出。
 这时纹理也发生了从OES Texture到2D Texture的改变，于是使用FBO之后的结构也使得拍照的结构容易输出处理后的图片。
