@@ -135,3 +135,14 @@ OpenGL ES允许使用帧缓存（Frame Buffer Object）使得渲染后的输出�
 * 美白：基于公式对颜色上调，使得整个画面变白，实现美白效果。可以调节颜色值的上调比例。
 * 锐化：由于进行了模糊处理并且并不是能够保边的模糊，对图像进行低程度的锐化可以使得图片更清晰。可以调节锐化程度。
 
+##界面
+主界面
+![主界面](https://b2.bmp.ovh/imgs/2019/08/a0f599704300bf23.png){:height="50%" width="50%"}
+左侧抽屉
+![左侧抽屉](https://b2.bmp.ovh/imgs/2019/08/e351a2c7a3bf61d2.png){:height="50%" width="50%"}
+右侧抽屉
+![右侧抽屉](https://b2.bmp.ovh/imgs/2019/08/02e2db5927cbe201.png){:height="50%" width="50%"}
+滤镜列表（开启美颜）
+![滤镜列表](https://b2.bmp.ovh/imgs/2019/08/0f2cf1ba86cd5943.png){:height="50%" width="50%"}
+设置对话框（以磨皮为例）
+![设置对话框](https://b2.bmp.ovh/imgs/2019/08/0c6bcda14aaf8dff.png  ){:height="50%" width="50%"}
