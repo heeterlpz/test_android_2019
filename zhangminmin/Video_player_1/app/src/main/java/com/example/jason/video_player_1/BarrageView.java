@@ -21,10 +21,9 @@ import java.util.Random;
 
 public class BarrageView extends RelativeLayout {
 
-    public ObjectAnimator objAnim;
+//    public ObjectAnimator objAnim;
     private Context mContext;
     private Random random = new Random(System.currentTimeMillis());   //获取自1970年1月1日0时起到现在的毫秒数
-
     private static final long BARRAGE_GAP_MIN_DURATION = 1000;//两个弹幕的最小间隔时间
     private static final long BARRAGE_GAP_MAX_DURATION = 2000;//两个弹幕的最大间隔时间
     private int maxSpeed = 5000;   // 最小速度，ms，越大越慢
@@ -35,6 +34,7 @@ public class BarrageView extends RelativeLayout {
     private List<String> itemText = new ArrayList<>();  //内容list
     private Handler hdr;
     private int situation;
+    public boolean pause;
     private View tempTextView;
 
     //    三重初始化
@@ -49,6 +49,7 @@ public class BarrageView extends RelativeLayout {
     public BarrageView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         mContext = context;
+        pause = false;
     }
 
     //弹幕生成方法
@@ -57,12 +58,13 @@ public class BarrageView extends RelativeLayout {
     }
 
     @SuppressLint("HandlerLeak")
-    public void generateItem(String content, int color, float size, float height, int level, int situations,boolean visiable) {
+    public void generateItem(String content, int color, float size, float height, int level, final int situations, boolean visiable) {
         situation = situations;
         final BarrageItem item = new BarrageItem();
         item.text = content;
         item.textView = new TextView(mContext);//创建textView 控件做单个弹幕条
         item.level = level;
+        item.situation = situation;
         //设置文本属性
         item.textView.setText(content);
         item.textView.setTextSize(size);
@@ -83,8 +85,8 @@ public class BarrageView extends RelativeLayout {
             public void handleMessage(Message msg) {
                 switch (msg.what) {
                     case 0x02:
+                        item.moveSpeed = 1000;
                         BarrageItem item = (BarrageItem)msg.obj;
-                        System.out.println("2");
                         showBarrageItem(item);
                         break;
                     case 0x03:
@@ -92,6 +94,8 @@ public class BarrageView extends RelativeLayout {
                         showBarrageItem(items);
                         break;
                     case 0x01:
+                        ObjectAnimator tempOA = (ObjectAnimator)msg.obj;
+                        tempOA.resume();
                         break;
                 }
             }
@@ -100,26 +104,14 @@ public class BarrageView extends RelativeLayout {
         Thread temptr = new Thread(new Runnable() {
             @Override
             public void run() {
-                if(situation == 1) {
-                    while(true){
-                        try{
-                            Thread.currentThread().sleep((long)(Math.random()*1000));
-                        } catch (Exception e){
-                            e.printStackTrace();
-                        }
-                        if(testDanmuBef(item))
-                            break;
-                    }
-                    System.out.println("快捷进图1:"+situation);
-                    item.moveSpeed = maxSpeed;
-                    Message ms = Message.obtain();
-                    ms.obj = item;
-                    ms.what = 0x03;
-                    hdr.sendMessage(ms);
-                }else {
-                    System.out.println("进图2:"+situation);
+                if(situation == 1){
                     Message ms = Message.obtain();
                     ms.what = 0x02;
+                    ms.obj = item;
+                    hdr.sendMessage(ms);
+                } else {
+                    Message ms = Message.obtain();
+                    ms.what = 0x03;
                     ms.obj = item;
                     hdr.sendMessage(ms);
                 }
@@ -128,26 +120,46 @@ public class BarrageView extends RelativeLayout {
         temptr.start();
     }
 
-    //在弹幕添加进动画之前判断他会不会和之前的弹幕view碰撞，false表示会碰撞
-    public boolean testDanmuBef(BarrageItem item) {
-        ViewGroup vg = this;
-        int num = vg.getChildCount();
-        int selfHeight = item.textMeasuredHeight;
-        int selfMargin = item.verticalPos;
-        for(int i = 0;i < num;i++) {
-            View tempTextView = vg.getChildAt(i);
-            int tempHeight = tempTextView.getHeight();
-            int tempWidth = tempTextView.getWidth();
-            int tempLeft = (int)(tempTextView.getTranslationX()+1);
-            LayoutParams tempparams = (LayoutParams) tempTextView.getLayoutParams();
-            int tempMargin = tempparams.topMargin;
-            if(((selfMargin>tempMargin)&&(selfMargin<(tempHeight+tempMargin))||((selfMargin<tempMargin)&&((selfHeight+selfMargin)>tempMargin)))&&(tempLeft>(vg.getWidth()-tempWidth))){
-                System.out.println(tempWidth+" : "+tempHeight+" : "+tempMargin+" | "+tempLeft+"  "+selfHeight+" | "+selfMargin);
-                return false;
-            }
+    //判断是否有视图遮挡
+    public boolean iscoverd(View thisview) {
+        Rect rectthis = new Rect();
+        thisview.getGlobalVisibleRect(rectthis);
+        for(int i = 0;i < this.getChildCount();i++) {
+            View otherview = this.getChildAt(i);
+            if(otherview == thisview)
+                break;
+            Rect rectother = new Rect();
+            otherview.getGlobalVisibleRect(rectother);
+            if(Rect.intersects(rectthis,rectother))
+                return true;
         }
-        return true;
+        return false;
     }
+
+
+
+
+
+    //在弹幕添加进动画之前判断他会不会和之前的弹幕view碰撞，false表示会碰撞(转变思路，考虑不同长度弹幕实际速度是不同的（规定的speed实际是时间），需要换一种做法)
+//    public boolean testDanmuBef(BarrageItem item) {
+//        ViewGroup vg = this;
+//        int num = vg.getChildCount();
+//        int selfHeight = item.textMeasuredHeight;
+//        int selfMargin = item.verticalPos;
+//        for(int i = 0;i < this.getChildCount();i++) {
+//            View tempTextView = this.getChildAt(i);
+//            int tempHeight = tempTextView.getHeight();
+//            int tempWidth = tempTextView.getWidth();
+//            int tempLeft = (int)(tempTextView.getTranslationX()+1);
+//            LayoutParams tempparams = (LayoutParams) tempTextView.getLayoutParams();
+//            int tempMargin = tempparams.topMargin;
+//            if(((selfMargin>tempMargin)&&(selfMargin<(tempHeight+tempMargin))||((selfMargin<tempMargin)&&((selfHeight+selfMargin)>tempMargin)))&&(tempLeft>(vg.getWidth()-tempWidth))){
+//                System.out.println(tempWidth+" : "+tempHeight+" : "+tempMargin+" | "+tempLeft+"  "+selfHeight+" | "+selfMargin);
+//                return false;
+//            }
+//        }
+//        return true;
+//    }
 
     /**
      * 显示TextView 的动画效果
@@ -167,19 +179,66 @@ public class BarrageView extends RelativeLayout {
     }
 
     synchronized private void transAnimRun(final BarrageItem item, int leftMargin) {
-        objAnim =ObjectAnimator
+        final ObjectAnimator objAnim =ObjectAnimator
                 //滑动位置是x方向滑动，从屏幕宽度+View的长度到左边0-View的长度
                 .ofFloat(item.textView,"translationX" , leftMargin+5, -item.textMeasuredWidth-5)//前者控制出现（）右边，后者控制消失（）左边
                 .setDuration(item.moveSpeed);
         //设置移动的过程速度，开始快之后满  //Interpolator是一个插值器
         objAnim.setInterpolator(new LinearInterpolator());
-        //开始动画
-        objAnim.start();
         //动画监听
         objAnim.addListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animation) {
+                //检测弹幕是否被遮挡
+                Thread tempthread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        while(situation == 1){
+                            if(iscoverd(item.textView)) {
+                                objAnim.pause();
+                            } else {
+                                Message ms = Message.obtain();
+                                ms.obj = objAnim;
+                                ms.what = 0x01;
+                                hdr.sendMessage(ms);
+                            }
+                            try{
+                                Thread.sleep(100);
+                            } catch (Exception e){
+                                e.printStackTrace();
+                            }
+                        }
 
+                    }
+                });
+
+                //控制弹幕停止
+                Thread tempthreads = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        while(true) {
+                            if (pause) {
+                                if(!objAnim.isPaused()){
+                                    objAnim.pause();
+                                }
+                            } else {
+                                if ((objAnim.isPaused())&&(situation != 1)) {
+                                    Message ms = Message.obtain();
+                                    ms.obj = objAnim;
+                                    ms.what = 0x01;
+                                    hdr.sendMessage(ms);
+                                }
+                            }
+                            try{
+                                Thread.sleep(50);
+                            } catch (Exception e){
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                });
+                tempthreads.start();
+                tempthread.start();
             }
             @Override
             public void onAnimationEnd(Animator animation) {
@@ -198,6 +257,8 @@ public class BarrageView extends RelativeLayout {
 
             }
         });
+        //开始动画
+        objAnim.start();
     }
 
     //清理已完成动画的弹幕视图,其实上面已经有onend清理，之前忘了，但可以添加防止动画卡死
@@ -206,7 +267,6 @@ public class BarrageView extends RelativeLayout {
          int num = vg.getChildCount();
          for(int i = 0;i < num;i++){
              vg.removeView(vg.getChildAt(i));
-
          }
     }
 

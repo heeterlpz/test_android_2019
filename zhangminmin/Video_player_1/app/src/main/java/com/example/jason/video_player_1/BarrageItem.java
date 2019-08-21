@@ -17,5 +17,6 @@ public class BarrageItem {
     public int textMeasuredWidth;//字体显示占据的宽度
     public int textMeasuredHeight;//字体显示占据的高度
     public int level;//弹幕的优先等级
+    public int situation;//弹幕所处的状态（遮挡：无遮）
 
 }
