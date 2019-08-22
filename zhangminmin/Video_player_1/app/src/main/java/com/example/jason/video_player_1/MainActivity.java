@@ -103,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
         mysqliteOH = new MySqlite(this,"danmu.db",null,1);
         mysqliteOH.getReadableDatabase().close();
         colornum = Color.rgb(0,0,0);
-        sizenum = 20;
+        sizenum = 17;
         getintime = 0;
         situation = 0;
         path = Environment.getExternalStorageDirectory().getAbsolutePath()+"/testi.mp4";
@@ -125,6 +125,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if(vv.isPlaying()){
                     vv.pause();
+                    bv.pause = true;
                 }
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                 intent.setType("video/*"); //选择视频 （mp4 3gp 是android支持的视频格式）
@@ -160,6 +161,8 @@ public class MainActivity extends AppCompatActivity {
                     values.put("video",path);
                     db.insert("danmu",null,values);
                 }
+                vv.start();
+                bv.pause = false;
             }
         });
 
@@ -169,15 +172,27 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 if(vv.isPlaying()) {
                     vv.pause();
+                    bv.pause = true;
                     btn.setText("播放");
                 } else {
                     vv.start();
+                    bv.pause = false;
                     btn.setText("暂停");
                 }
 
 
             }
         });
+
+        //当编辑弹幕时
+        et.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                vv.pause();
+                bv.pause = true;
+            }
+        });
+
 
         //弹幕字体颜色选择
         sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -212,7 +227,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                sizenum = 17 + seekBar.getProgress();
+                sizenum = 10 + seekBar.getProgress();
                 tv.setTextSize(sizenum);
             }
         });
