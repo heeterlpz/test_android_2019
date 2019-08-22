@@ -4,7 +4,7 @@ varying vec2 vTextureCoord;
 uniform sampler2D sTexture;
 uniform vec2 uTexOffset[KERNEL_SIZE];
 void main() {
-	//卷积内核中各个位置的值
+	//卷积内核中各个位置的值 sobel 偏x方向
 	float kernelValue0 = -1.0; float kernelValue1 = 0.0; float kernelValue2 = 1.0;
 	float kernelValue3 = -2.0; float kernelValue4 = 0.0; float kernelValue5 = 2.0;
 	float kernelValue6 = -1.0; float kernelValue7 = 0.0; float kernelValue8 = 1.0;
@@ -24,6 +24,16 @@ void main() {
 	sum =kernelValue0*cTemp0+kernelValue1*cTemp1+kernelValue2*cTemp2
 	+kernelValue3*cTemp3+kernelValue4*cTemp4+kernelValue5*cTemp5
 	+kernelValue6*cTemp6+kernelValue7*cTemp7+kernelValue8*cTemp8;
+	//卷积内核中各个位置的值 sobel 偏y方向
+	kernelValue0=-1.0; kernelValue1=-2.0; kernelValue2=-1.0;
+	kernelValue3=0.0;  kernelValue4=0.0;  kernelValue5=0.0;
+	kernelValue6=1.0;  kernelValue7=2.0;  kernelValue8=1.0;
 	
-	gl_FragColor=vec4(sum.rgb,1.0);
+	sum =sum+kernelValue0*cTemp0+kernelValue1*cTemp1+kernelValue2*cTemp2
+	+kernelValue3*cTemp3+kernelValue4*cTemp4+kernelValue5*cTemp5
+	+kernelValue6*cTemp6+kernelValue7*cTemp7+kernelValue8*cTemp8;
+	
+	sum=sum/2.0;
+	float color=sum.r*0.3+sum.g*0.59+sum.b*0.11;
+	gl_FragColor = vec4(color, color, color, 1.0);
 }

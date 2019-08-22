@@ -4,17 +4,24 @@ import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 
 import com.example.nyamori.mytestapplication.MyFrameRect;
+import com.example.nyamori.mytestapplication.R;
+import com.example.nyamori.mytestapplication.ShaderLoader;
 
 public class InputFilter extends BaseFilter {
 
     public InputFilter(int width,int height){
-        super(width,height);
+        super();
+        mProgramHandle = ShaderLoader.getInstance().loadShader(R.raw.fragment_shader_ext);
+        getLocation();
+        chooseSize(width,height);
+        createFrame();
+        initRect();
     }
 
     @Override
     public void initRect() {
         super.initRect();
-        setTexBuffer(true);
+        flashTexBuffer();
     }
 
     @Override
@@ -25,11 +32,7 @@ public class InputFilter extends BaseFilter {
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, myTexture[0]);
     }
 
-    public void setTexBuffer(boolean flag){
-        if(flag){
-            texBuffer= MyFrameRect.getFullRectangleTexRotate90Buf();
-        }else {
-            texBuffer=MyFrameRect.getFullRectangleTexBuf();
-        }
+    public void flashTexBuffer(){
+        texBuffer=MyFrameRect.getFullRectangleTexRotate90Buf();
     }
 }

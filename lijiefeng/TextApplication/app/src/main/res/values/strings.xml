@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">视频弹幕</string>
+    <string name="button">发 送</string>
+    <string name="text">视频播放区</string>
+    <string name="danmu">弹幕输入区</string>
+    <string name="jieyou">解忧大队</string>
+    <string name="lanqiu">篮球技巧</string>
+    <string name="play">播放视频</string>
+</resources>

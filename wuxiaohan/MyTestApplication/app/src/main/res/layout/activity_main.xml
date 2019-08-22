@@ -26,6 +26,12 @@
                 android:text="withOpenGL-FPS:"
                 android:textColor="@color/colorAccent"/>
         </FrameLayout>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:id="@+id/change_camera"
+            android:text="切换摄像头"/>
     </LinearLayout>
 
     <android.support.design.widget.NavigationView
@@ -35,4 +41,22 @@
         android:layout_gravity="start"
         app:menu="@menu/nav_menu"
         app:headerLayout="@layout/nay_header"/>
+
+    <LinearLayout
+        android:layout_width="200dp"
+        android:layout_height="match_parent"
+        android:background="#fff"
+        android:orientation="vertical"
+        android:layout_gravity="end">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="滤镜列表:"
+            android:textSize="30dp"
+            android:padding="5dp"/>
+        <ListView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/filter_list"/>
+    </LinearLayout>
 </android.support.v4.widget.DrawerLayout>

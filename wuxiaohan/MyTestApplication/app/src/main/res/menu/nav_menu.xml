@@ -46,6 +46,9 @@
                 <item
                     android:title="美白"
                     android:id="@+id/nav_add_whitening"/>
+                <item
+                    android:title="磨皮美颜"
+                    android:id="@+id/nav_add_beauty"/>
             </menu>
         </item>
 

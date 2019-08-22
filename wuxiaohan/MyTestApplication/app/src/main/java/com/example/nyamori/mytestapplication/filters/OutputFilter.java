@@ -12,13 +12,17 @@ public class OutputFilter extends BaseFilter {
 
     public OutputFilter(int width, int height,int xStart,int yStart){
         super();
+        setSize(width,height,xStart,yStart);
+        mProgramHandle = ShaderLoader.getInstance().loadShader(R.raw.fragment_shader_2d);
+        getLocation();
+        initRect();
+    }
+
+    public void setSize(int width, int height,int xStart,int yStart) {
         this.width=width;
         this.height=height;
         this.xStart=xStart;
         this.yStart=yStart;
-        mProgramHandle = ShaderLoader.getInstance().loadShader(R.raw.fragment_shader_2d);
-        getLocation();
-        initRect();
     }
 
     @Override

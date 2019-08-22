@@ -25,9 +25,9 @@ import static android.opengl.GLES20.glEnableVertexAttribArray;
 import static android.opengl.GLES20.glGenFramebuffers;
 import static android.opengl.GLES20.glGetAttribLocation;
 import static android.opengl.GLES20.glGetUniformLocation;
+import static android.opengl.GLES20.glUniform1f;
 import static android.opengl.GLES20.glUniform1i;
 import static android.opengl.GLES20.glUniformMatrix4fv;
-import static android.opengl.GLES20.glUseProgram;
 import static android.opengl.GLES20.glVertexAttribPointer;
 import static android.opengl.GLES20.glViewport;
 
@@ -50,14 +50,22 @@ public class CameraRenderer implements GLSurfaceView.Renderer{
     private int[] mFBOIds = new int[1];
     private int type;
     private int type1;
+    private Handler mHandle;
+    private int alphaLevelLocation = -1;
+    private float alphaLevel;
+    private int betaLevelLocation = -1;
+    private float betaLevel;
+    private int redLevelLocation = -1;
+    private float redLevel;
 
-    public void init(CameraGLSurfaceView glSurfaceView, Camera camera, boolean isPreviewStarted, Context context, int type) {
+    public void init(CameraGLSurfaceView glSurfaceView, Camera camera, boolean isPreviewStarted, Context context, int type, Handler mHandle) {
         mContext = context;
         mGLSurfaceView = glSurfaceView;
         mCamera = camera;
         bIsPreviewStarted = isPreviewStarted;
         this.type=type;
         this.type1=type;
+        this.mHandle=mHandle;
     }
 
     public void changeFilter(int type){
@@ -109,10 +117,17 @@ public class CameraRenderer implements GLSurfaceView.Renderer{
         aTextureCoordLocation = glGetAttribLocation(mShaderProgram, FilterEngine.TEXTURE_COORD_ATTRIBUTE);
         uTextureMatrixLocation = glGetUniformLocation(mShaderProgram, FilterEngine.TEXTURE_MATRIX_UNIFORM);
         uTextureSamplerLocation = glGetUniformLocation(mShaderProgram, FilterEngine.TEXTURE_SAMPLER_UNIFORM);
+        alphaLevelLocation = glGetUniformLocation(mShaderProgram,FilterEngine.ALPHA_LEVEL);
+        betaLevelLocation = glGetUniformLocation(mShaderProgram,FilterEngine.BETAL_LEVEL);
+        redLevelLocation = glGetUniformLocation(mShaderProgram,FilterEngine.RED_LEVEL);
+
 
         glActiveTexture(GLES20.GL_TEXTURE0);
         glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, mOESTextureId);
         glUniform1i(uTextureSamplerLocation, 0);
+        glUniform1f(alphaLevelLocation,alphaLevel);
+        glUniform1f(betaLevelLocation,betaLevel);
+        glUniform1f(redLevelLocation,redLevel);
         glUniformMatrix4fv(uTextureMatrixLocation, 1, false, transformMatrix, 0);
 
         if (mDataBuffer != null) {
@@ -145,8 +160,10 @@ public class CameraRenderer implements GLSurfaceView.Renderer{
             @Override
             public void onFrameAvailable(SurfaceTexture surfaceTexture) {
                 mGLSurfaceView.requestRender();
+                mHandle.sendEmptyMessage(0);
             }
         });
+
         mCamera.setPreviewTexture(mSurfaceTexture);
         mCamera.startPreview();
         return true;
@@ -168,5 +185,17 @@ public class CameraRenderer implements GLSurfaceView.Renderer{
 
     public void setType(int type){
         this.type=type;
+    }
+
+    public void setAlphaLevel(float alphaLevel){
+        this.alphaLevel=alphaLevel;
+    }
+
+    public void setBetaLevel(float betaLevel){
+        this.betaLevel = betaLevel;
+    }
+
+    public void setRedLevel(float redLevel){
+        this.redLevel = redLevel;
     }
 }

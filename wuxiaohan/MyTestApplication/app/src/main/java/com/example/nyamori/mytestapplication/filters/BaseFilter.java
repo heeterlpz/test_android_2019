@@ -26,8 +26,6 @@ public class BaseFilter {
     protected int width;
     protected int height;
 
-    protected int muMVPMatrixLoc;
-    protected int muTexMatrixLoc;
     protected int maPositionLoc;
     protected int maTextureCoordLoc;
 
@@ -40,10 +38,16 @@ public class BaseFilter {
 
     protected float[] mTexOffset;
 
-    public BaseFilter(){ }
+    public boolean isLevelZero() {
+        return isLevelZero;
+    }
+
+    protected boolean isLevelZero=false;
+
+    public BaseFilter(){}
 
     public BaseFilter(int width, int height){
-        mProgramHandle = ShaderLoader.getInstance().loadShader(R.raw.fragment_shader_ext);
+        mProgramHandle = ShaderLoader.getInstance().loadShader(R.raw.fragment_shader_2d);
         getLocation();
         chooseSize(width,height);
         createFrame();
@@ -58,6 +62,21 @@ public class BaseFilter {
     }
 
     public int getTexture(){return myTexture[0];}
+
+    public void setSize(int width,int height){
+        chooseSize(width,height);
+    }
+
+    public void setLevel(int newLevel){
+    }
+
+    public int getLevelMax(){
+        return 0;
+    }
+
+    public int getLevel(){
+        return 0;
+    }
 
     public void chooseSize(int width,int height){
         this.width=judgeSize(width);
@@ -115,10 +134,6 @@ public class BaseFilter {
         GlUtil.checkLocation(maPositionLoc, "aPosition");
         maTextureCoordLoc = GLES20.glGetAttribLocation(mProgramHandle, "aTextureCoord");
         GlUtil.checkLocation(maTextureCoordLoc, "aTextureCoord");
-        muMVPMatrixLoc = GLES20.glGetUniformLocation(mProgramHandle, "uMVPMatrix");
-        GlUtil.checkLocation(muMVPMatrixLoc, "uMVPMatrix");
-        muTexMatrixLoc = GLES20.glGetUniformLocation(mProgramHandle, "uTexMatrix");
-        GlUtil.checkLocation(muTexMatrixLoc, "uTexMatrix");
     }
 
     public void initRect(){
@@ -130,13 +145,13 @@ public class BaseFilter {
         texStride=MyFrameRect.getTexCoordStride();
     }
 
-    public void draw(int preTexture,float[] texMatrix){
+    public void draw(int preTexture){
         GlUtil.checkGlError("draw start");
         onBindFrame();
         setProgram();
         setTexture(preTexture);
         setUniform();
-        onDraw(texMatrix);
+        onDraw();
         unBindFrame();
     }
 
@@ -164,13 +179,7 @@ public class BaseFilter {
 
     }
 
-    public void onDraw(float[] texMatrix){
-        // Copy the model/view/projection matrix over.
-        GLES20.glUniformMatrix4fv(muMVPMatrixLoc, 1, false, GlUtil.IDENTITY_MATRIX, 0);
-        GlUtil.checkGlError("glUniformMatrix4fv");
-        // Copy the texture transformation matrix over.
-        GLES20.glUniformMatrix4fv(muTexMatrixLoc, 1, false, texMatrix, 0);
-        GlUtil.checkGlError("glUniformMatrix4fv");
+    public void onDraw(){
         // Enable the "aPosition" vertex attribute.
         GLES20.glEnableVertexAttribArray(maPositionLoc);
         GlUtil.checkGlError("glEnableVertexAttribArray");
