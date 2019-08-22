@@ -18,6 +18,10 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 public class BarrageView extends RelativeLayout {
 
@@ -36,6 +40,7 @@ public class BarrageView extends RelativeLayout {
     private int situation;
     public boolean pause;
     private View tempTextView;
+    private ScheduledExecutorService ses;
 
     //    三重初始化
     public BarrageView(Context context) {
@@ -50,6 +55,7 @@ public class BarrageView extends RelativeLayout {
         super(context, attrs, defStyleAttr);
         mContext = context;
         pause = false;
+        ses = Executors.newScheduledThreadPool(25);
     }
 
     //弹幕生成方法
@@ -80,12 +86,14 @@ public class BarrageView extends RelativeLayout {
         item.moveSpeed = (int) (minSpeed + (maxSpeed - minSpeed) * Math.random());
         totalHeight = (int)((height)*(this.getHeight()-item.textMeasuredHeight));//获取实际高度
         item.verticalPos = totalHeight;
+        final int width = this.getWidth();
         hdr = new Handler() {
             @Override
             public void handleMessage(Message msg) {
                 switch (msg.what) {
                     case 0x02:
-                        item.moveSpeed = 1000;
+                        int journey = item.textMeasuredWidth+width;
+                        item.moveSpeed = (int)(3*journey);
                         BarrageItem item = (BarrageItem)msg.obj;
                         showBarrageItem(item);
                         break;
@@ -120,25 +128,28 @@ public class BarrageView extends RelativeLayout {
         temptr.start();
     }
 
-    //判断是否有视图遮挡
-    public boolean iscoverd(View thisview) {
-        Rect rectthis = new Rect();
-        thisview.getGlobalVisibleRect(rectthis);
-        for(int i = 0;i < this.getChildCount();i++) {
-            View otherview = this.getChildAt(i);
-            if(otherview == thisview)
-                break;
-            Rect rectother = new Rect();
-            otherview.getGlobalVisibleRect(rectother);
-            if(Rect.intersects(rectthis,rectother))
-                return true;
+    //在动画创建之后判断是否有视图遮挡
+    synchronized public boolean iscoverd(View thisview,int selfHeight,int selfMargin) {
+        System.out.println("sx"+((TextView)thisview).getText().toString());
+        float tempx = thisview.getTranslationX();
+        int num = this.getChildCount();
+        for(int i = 0;i < num;i++) {
+            View tempTextView = this.getChildAt(i);
+            if (tempTextView == thisview)
+                continue;
+            int tempHeight = tempTextView.getHeight();
+            int tempWidth = tempTextView.getWidth();
+            float tempLeft = (tempTextView.getTranslationX()+1);
+            LayoutParams tempparams = (LayoutParams) tempTextView.getLayoutParams();
+            int tempMargin = tempparams.topMargin;
+            //System.out.println(tempLeft+" "+tempx+" "+tempWidth+" "+selfMargin+" "+tempMargin+" "+tempHeight+" "+selfHeight);
+            if((((tempLeft)<=tempx)&&((tempLeft+tempWidth)>=tempx))&&(((selfMargin>=tempMargin)&&(selfMargin<=(tempHeight+tempMargin)))||((selfMargin<=tempMargin)&&((selfHeight+selfMargin)>=tempMargin)))){
+                System.out.println("in");
+               return true;
+            }
         }
         return false;
     }
-
-
-
-
 
     //在弹幕添加进动画之前判断他会不会和之前的弹幕view碰撞，false表示会碰撞(转变思路，考虑不同长度弹幕实际速度是不同的（规定的speed实际是时间），需要换一种做法)
 //    public boolean testDanmuBef(BarrageItem item) {
@@ -166,7 +177,7 @@ public class BarrageView extends RelativeLayout {
      * @param item
      */
      synchronized private void showBarrageItem(final BarrageItem item) {
-         System.out.println("pp "+item.text);
+//         System.out.println("pp "+item.text);
          //屏幕宽度 像素
         int leftMargin = this.getRight() - this.getLeft() - this.getPaddingLeft();//getrigth - getleft 就是width
         //显示的TextView 的位置，
@@ -181,20 +192,22 @@ public class BarrageView extends RelativeLayout {
     synchronized private void transAnimRun(final BarrageItem item, int leftMargin) {
         final ObjectAnimator objAnim =ObjectAnimator
                 //滑动位置是x方向滑动，从屏幕宽度+View的长度到左边0-View的长度
-                .ofFloat(item.textView,"translationX" , leftMargin+5, -item.textMeasuredWidth-5)//前者控制出现（）右边，后者控制消失（）左边
+                .ofFloat(item.textView,"translationX" , leftMargin, -item.textMeasuredWidth-10)//前者控制出现（）右边，后者控制消失（）左边
                 .setDuration(item.moveSpeed);
         //设置移动的过程速度，开始快之后满  //Interpolator是一个插值器
         objAnim.setInterpolator(new LinearInterpolator());
+        final ViewGroup vg = this;
         //动画监听
         objAnim.addListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animation) {
-                //检测弹幕是否被遮挡
-                Thread tempthread = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        while(situation == 1){
-                            if(iscoverd(item.textView)) {
+                if((situation == 1)){
+                    Thread tempthread = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if((item.textView.getParent() != vg))
+                                return;
+                            if ((iscoverd(item.textView,item.textView.getHeight(),item.verticalPos)) || (pause)) {
                                 objAnim.pause();
                             } else {
                                 Message ms = Message.obtain();
@@ -202,15 +215,13 @@ public class BarrageView extends RelativeLayout {
                                 ms.what = 0x01;
                                 hdr.sendMessage(ms);
                             }
-                            try{
-                                Thread.sleep(100);
-                            } catch (Exception e){
-                                e.printStackTrace();
-                            }
                         }
 
-                    }
-                });
+                    });
+                    final ScheduledFuture<?> future = ses.scheduleAtFixedRate(tempthread, 0, 100, TimeUnit.MILLISECONDS);
+                }
+                //检测弹幕是否被遮挡
+
 
                 //控制弹幕停止
                 Thread tempthreads = new Thread(new Runnable() {
@@ -238,7 +249,6 @@ public class BarrageView extends RelativeLayout {
                     }
                 });
                 tempthreads.start();
-                tempthread.start();
             }
             @Override
             public void onAnimationEnd(Animator animation) {
