@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item android:title="滤镜模块">
+            <menu>
+                <item
+                    android:id="@+id/nav_ext"
+                    android:icon="@drawable/ic_menu_camera"
+                    android:title="@string/menu_ext" />
+                <item
+                    android:id="@+id/nav_bw"
+                    android:icon="@drawable/ic_menu_gallery"
+                    android:title="@string/menu_bw" />
+                <item
+                    android:id="@+id/nav_relief"
+                    android:icon="@drawable/ic_menu_slideshow"
+                    android:title="@string/menu_relief" />
+                <item
+                    android:id="@+id/nav_split"
+                    android:icon="@drawable/ic_menu_manage"
+                    android:title="@string/menu_split" />
+
+                <item
+                    android:id="@+id/nav_mosaic"
+                    android:icon="@drawable/ic_menu_manage"
+                    android:title="@string/menu_mosaic" />
+            </menu>
+        </item>
+    </group>
+
+    <item android:title="美颜模块">
+        <menu>
+            <item
+                android:id="@+id/nav_sg"
+                android:icon="@drawable/ic_menu_share"
+                android:title="@string/menu_sg" />
+            <item
+                android:id="@+id/nav_sw"
+                android:icon="@drawable/ic_menu_send"
+                android:title="@string/menu_sw" />
+        </menu>
+    </item>
+
+</menu>

@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">智慧相机</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">智慧相机</string>
+    <string name="nav_header_subtitle">照出最美的你</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_close">关闭应用</string>
+
+    <string name="menu_ext">原图</string>
+    <string name="menu_bw">黑白</string>
+    <string name="menu_relief">浮雕</string>
+    <string name="menu_split">分屏</string>
+    <string name="menu_mosaic">马赛克</string>
+    <string name="menu_sw">美白</string>
+    <string name="menu_sg">磨皮</string>
+</resources>
