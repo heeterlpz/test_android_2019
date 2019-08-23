@@ -149,6 +149,7 @@ public class MainActivity extends AppCompatActivity {
                 int color = colornum;
                 float size = sizenum;
                 float height = (float)Math.random();
+//                float height = 0.5f;
                 if(!danmuContent.equals("")) {
                     SQLiteDatabase db = mysqliteOH.getWritableDatabase();
                     ContentValues values = new ContentValues();

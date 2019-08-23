@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_original"
+            android:icon="@drawable/ic_menu_manage"
+            android:title="原始" />
+        <item
+            android:id="@+id/nav_mosaic"
+            android:icon="@drawable/ic_menu_manage"
+            android:title="马赛克" />
+        <item
+            android:id="@+id/nav_div_ud"
+            android:icon="@drawable/ic_menu_manage"
+            android:title="对称" />
+        <item
+            android:id="@+id/nav_split"
+            android:icon="@drawable/ic_menu_manage"
+            android:title="9宫格" />
+        <item
+            android:id="@+id/nav_smooth"
+            android:icon="@drawable/ic_menu_manage"
+            android:title="模糊" />
+        <item
+            android:id="@+id/nav_ext_bw"
+            android:icon="@drawable/ic_menu_manage"
+            android:title="黑白" />
+        <item
+            android:id="@+id/nav_white"
+            android:icon="@drawable/ic_menu_manage"
+            android:title="美白" />
+        <item
+            android:id="@+id/nav_smooth_skin"
+            android:icon="@drawable/ic_menu_manage"
+            android:title="磨皮" />
+    </group>
+
+    <item android:title="操作">
+        <menu>
+            <item
+                android:id="@+id/nav_switch_camera"
+                android:icon="@drawable/ic_menu_manage"
+                android:title="切换摄像头" />
+        </menu>
+    </item>
+
+</menu>

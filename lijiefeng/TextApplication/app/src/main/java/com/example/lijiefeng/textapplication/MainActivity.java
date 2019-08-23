@@ -5,12 +5,12 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.support.annotation.IdRes;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.TranslateAnimation;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.MediaController;
 import android.widget.RadioButton;
@@ -20,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
+import java.util.Date;
 import java.util.Formatter;
 import java.util.Locale;
 import java.util.Map;
@@ -40,7 +41,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button playbutton;
     private RelativeLayout root;
     private VideoView videoView;
+    private CheckBox overlap;
     private Timer timer;
+
     SharedPreferences barrage0;
     SharedPreferences barrage1;
     double value = 1.0;
@@ -55,6 +58,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         sendbutton.setOnClickListener(this);
         playbutton.setOnClickListener(this);
         run();
+        //设置单选框组监听器
         radioGroup1.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(RadioGroup radioGroup, int checkedId) {
@@ -83,6 +87,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         editText = (EditText) findViewById(R.id.editText);
         playbutton = (Button) findViewById(R.id.playbutton);
         sendbutton = (Button) findViewById(R.id.sendbutton);
+        overlap = (CheckBox) findViewById(R.id.overlap);
         radioGroup1 = (RadioGroup) findViewById(R.id.RG0);
         radioGroup = (RadioGroup) findViewById(R.id.rg);
         radioButton1 = (RadioButton) findViewById(R.id.rb1);
@@ -100,8 +105,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     sendBarrage();
                     editText.setText("");
                 }
-                videoView.setFocusable(true);
-                videoView.requestFocus();
                 break;
             case R.id.playbutton:
                 if(radioGroup.getCheckedRadioButtonId() == R.id.rb1){
@@ -129,7 +132,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void sendBarrage() {
         //使用TextView作为弹幕的载体
         TextView tv = new TextView(this);
-        tv.setTextSize(20);
+        tv.setTextSize(18);
         tv.setText(editText.getText().toString());
         tv.setTextColor(getResources().getColor(R.color.red));
         String playTime = stringForTime(videoView.getCurrentPosition()-1000);
@@ -141,7 +144,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //发送库存弹幕
     private void sendstoragebarrage(String barrages) {
         TextView tv0 = new TextView(this);
-        tv0.setTextSize(20);
+        tv0.setTextSize(18);
         tv0.setText(barrages);
         tv0.setTextColor(getResources().getColor(R.color.blue));
         root.addView(tv0);
@@ -161,7 +164,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
             editor.putString(time, barragecontent);
             editor.apply();
-        }else {
+        }
+        if(radioGroup.getCheckedRadioButtonId() == R.id.rb2){
             SharedPreferences.Editor editor = barrage1.edit();
             Map<String, String> barragemap = (Map<String, String>) barrage1.getAll();
             Set<Map.Entry<String, String>> entryset = barragemap.entrySet();
@@ -198,26 +202,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
             }
         }
-
     }
 
     //补间动画实现弹幕滚动效果
     private void designBarrage(TextView textView, RelativeLayout relativeLayout) {
         textView.measure(0, 0);
         int measuredWidth = textView.getMeasuredWidth();  //获取TextView的宽度
-        int measuredHeight = textView.getMeasuredHeight();//获取TextView的高度
+        int measuredHeight = textView.getMeasuredHeight(); //获取TextView的高度
         int layoutHeight = relativeLayout.getBottom() - relativeLayout.getTop();  //获取布局的宽度
-        int y = (int) (Math.random() * layoutHeight * value );  //设置弹幕随机产生的Y坐标
-        if (y > layoutHeight * value  - measuredHeight) {  // 出现在布局底部时坐标要扣除TextView的高度
-            y -= measuredHeight;
+        int y,fromx=relativeLayout.getRight() - relativeLayout.getLeft(),tox=-measuredWidth,fromy=0,toy=0;
+        if(overlap.isChecked()){
+            y = (int) (Math.random() * (layoutHeight * value  -measuredHeight));  //设置弹幕随机产生的Y坐标
+            fromx = relativeLayout.getRight() - relativeLayout.getLeft();
+            tox = -measuredWidth;
+            fromy = y;
+            toy = y;
+        }else {
+            //弹幕不重叠的代码
+            
         }
-
-        int fromx = relativeLayout.getRight() - relativeLayout.getLeft();
-        int tox = 0 - measuredWidth;
-        int fromy = y;
-        int toy = y;
         translateAnimation = new TranslateAnimation(fromx, tox, fromy, toy); //动画的位置显示
-        translateAnimation.setDuration(3000);  //动画持续的时间 单位ms
+        translateAnimation.setDuration((fromx + measuredWidth)*5);  //动画持续的时间 单位ms
         translateAnimation.setFillAfter(true);
         translateAnimation.setInterpolator(new AccelerateDecelerateInterpolator()); //在动画开始与结束的地方速率改变比较慢，在中间的时候加速
         textView.setAnimation(translateAnimation); //为TextView设置动画效果
@@ -248,10 +253,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void run() {
                 Message message = handler.obtainMessage();
                 handler.sendMessage(message);
-                handler.removeMessages(1);
             }
         };
-        timer.schedule(task, videoView.getCurrentPosition(), 1000);
+
+        timer.schedule(task, new Date(), 1000);
     }
 
     private Handler handler = new Handler() {
