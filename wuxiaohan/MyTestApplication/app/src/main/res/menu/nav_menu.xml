@@ -49,6 +49,9 @@
                 <item
                     android:title="磨皮美颜"
                     android:id="@+id/nav_add_beauty"/>
+                <item
+                    android:title="瘦脸"
+                    android:id="@+id/nav_add_face_lift"/>
             </menu>
         </item>
 

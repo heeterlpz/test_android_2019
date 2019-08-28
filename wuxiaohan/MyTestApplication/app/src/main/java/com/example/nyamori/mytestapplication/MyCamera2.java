@@ -2,7 +2,10 @@ package com.example.nyamori.mytestapplication;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
+import android.graphics.YuvImage;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -10,6 +13,8 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.Image;
+import android.media.ImageReader;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -21,6 +26,9 @@ import android.util.Size;
 import android.view.Surface;
 import android.widget.Toast;
 
+import com.megvii.facepp.sdk.Facepp;
+
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,12 +46,15 @@ public class MyCamera2 {
     private CaptureRequest.Builder mPreviewBuilder;
     private Surface targetSurface;
 
+    private ImageReader imageReader;
+
     private Context mContext;
     private int cameraType;
+    private Facepp facepp;
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public MyCamera2(Context context){
-        this.mContext=context;
+        this.mContext=context.getApplicationContext();
         cameraType=Config.CAMERA_TYPE.FRONT_TYPE;
         MyFrameRect.setCameraType(cameraType);
         mCameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
@@ -52,8 +63,28 @@ public class MyCamera2 {
         mCameraHandler = new Handler(handlerThreadCamera.getLooper());
     }
 
+    public void initFaceEngine(){
+        Faces.setCamera(cameraType);
+//
+        facepp = new Facepp();
+        Log.d("megvii", "initFaceEngine: time="+Facepp.getApiExpirationMillis(mContext,MainActivity.getFileContent(mContext, R.raw.megviifacepp_0_5_2_model)));
+        String errorCode = facepp.init(mContext, MainActivity.getFileContent(mContext, R.raw.megviifacepp_0_5_2_model), 1);
+        if(errorCode!=null)Log.e("megvii", "MyCamera2: error code="+errorCode);
+        else Log.i("megvii", "initFaceEngine: success");
+        Facepp.FaceppConfig faceppConfig = facepp.getFaceppConfig();
+        faceppConfig.detectionMode= Facepp.FaceppConfig.DETECTION_MODE_TRACKING_FAST;
+        faceppConfig.interval=25;
+        if(cameraType==Config.CAMERA_TYPE.FRONT_TYPE){
+            faceppConfig.rotation=270;
+        }else {
+            faceppConfig.rotation=90;
+        }
+        facepp.setFaceppConfig(faceppConfig);
+    }
+
     public ViewPort initCamera(int width,int height){
-        Size mPreviewSize=new Size(width,height);
+        initFaceEngine();
+        Size previewSize = new Size(width, height);
         try{
             for (String cameraID:mCameraManager.getCameraIdList()){
                 CameraCharacteristics cameraCharacteristics=mCameraManager.getCameraCharacteristics(cameraID);
@@ -67,37 +98,70 @@ public class MyCamera2 {
                 this.cameraID=cameraID;
                 //获取预览尺寸
                 if(width>height){
-                    mPreviewSize=getPreferredPreviewSize(map.getOutputSizes(SurfaceTexture.class),width,height);
+                    previewSize =getPreferredPreviewSize(map.getOutputSizes(SurfaceTexture.class),width,height);
                 }else {
-                    mPreviewSize=getPreferredPreviewSize(map.getOutputSizes(SurfaceTexture.class),height,width);
-                    mPreviewSize=new Size(mPreviewSize.getHeight(),mPreviewSize.getWidth());
-                    Log.d(TAG, "initCamera: new size="+mPreviewSize.toString());
+                    previewSize =getPreferredPreviewSize(map.getOutputSizes(SurfaceTexture.class),height,width);
+                    previewSize =new Size(previewSize.getHeight(), previewSize.getWidth());
+                    Log.d(TAG, "initCamera: new size="+ previewSize.toString());
                 }
             }
-            if(mPreviewSize.getWidth()<width&&mPreviewSize.getHeight()<height){
-                int newHeight=(int)(mPreviewSize.getHeight()*((float)width/mPreviewSize.getWidth()));
+            imageReader=ImageReader.newInstance(previewSize.getWidth(), previewSize.getHeight(),
+                    ImageFormat.YUV_420_888,5);
+            if(previewSize.getWidth()<width&& previewSize.getHeight()<height){
+                int newHeight=(int)(previewSize.getHeight()*((float)width/ previewSize.getWidth()));
                 Log.d(TAG, "initCamera: new heigth="+newHeight);
                 int yStart = (height - newHeight);
                 Log.d(TAG, "initCamera: xStart=0 yStart="+yStart);
                 return new ViewPort(0,yStart,width,newHeight);
             }else {
-                int xStart = (width - mPreviewSize.getWidth()) / 2;
-                int yStart = (height - mPreviewSize.getHeight());
+                int xStart = (width - previewSize.getWidth()) / 2;
+                int yStart = (height - previewSize.getHeight());
                 Log.d(TAG, "initCamera: xStart="+xStart+"yStart="+yStart);
-                return new ViewPort(xStart,yStart,mPreviewSize.getWidth(),mPreviewSize.getHeight());
+                return new ViewPort(xStart,yStart, previewSize.getWidth(), previewSize.getHeight());
             }
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
-        return new ViewPort(0,0,mPreviewSize.getWidth(),mPreviewSize.getHeight());
+        return new ViewPort(0,0, previewSize.getWidth(), previewSize.getHeight());
     }
 
-    public void setTargetSurface(SurfaceTexture surface) {
-        targetSurface=new Surface(surface);
+    public void setTargetSurface(final SurfaceTexture surface) {
+        if(surface!=null) targetSurface=new Surface(surface);
+        imageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
+            @Override
+            public void onImageAvailable(ImageReader reader) {
+                Image image=reader.acquireLatestImage();
+                if(image!=null){
+                    long time=System.currentTimeMillis();
+                    int width=image.getWidth();
+                    int height=image.getHeight();
+
+                    byte[] data=getDataFromImage(image);
+
+                    final Facepp.Face[] faces = facepp.detect(data, width, height, Facepp.IMAGEMODE_NV21);
+                    Faces.clearList();
+                    if(faces.length>0){
+                        for(Facepp.Face face:faces){
+                            Log.d("megvii", "onImageAvailable: face="+face.rect);
+                            Faces.setFaceInfoList(face.rect,width,height);
+                            facepp.getLandmarkRaw(face,Facepp.FPP_GET_LANDMARK81);
+                            Faces.setPoints(face.points,width,height);
+                        }
+                        Faces.setFaceNumber(faces.length);
+                    }else {
+                        Log.i(TAG, "onImageAvailable: there is no face");
+                    }
+                    Log.i(TAG, "onImageAvailable: face use time="+(System.currentTimeMillis()-time));
+                    image.close();
+                }
+            }
+        },mCameraHandler);
     }
 
     public ViewPort changeCamera(int width,int height){
         mCamera.close();
+        imageReader.close();
+        facepp.release();
         if(cameraType== Config.CAMERA_TYPE.FRONT_TYPE){
             cameraType= Config.CAMERA_TYPE.BACK_TYPE;
         }else {
@@ -105,6 +169,7 @@ public class MyCamera2 {
         }
         MyFrameRect.setCameraType(cameraType);
         ViewPort viewPort=initCamera(width,height);
+        setTargetSurface(null);
         openCamera();
         return viewPort;
     }
@@ -156,7 +221,8 @@ public class MyCamera2 {
     private void takePreview() throws CameraAccessException {
         mPreviewBuilder = mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
         mPreviewBuilder.addTarget(targetSurface);
-        mCamera.createCaptureSession(Arrays.asList(targetSurface),mSessionPreviewStateCallback, mCameraHandler);
+        mPreviewBuilder.addTarget(imageReader.getSurface());
+        mCamera.createCaptureSession(Arrays.asList(targetSurface,imageReader.getSurface()),mSessionPreviewStateCallback, mCameraHandler);
     }
     private CameraCaptureSession.StateCallback mSessionPreviewStateCallback = new CameraCaptureSession.StateCallback() {
         @Override
@@ -198,4 +264,66 @@ public class MyCamera2 {
         return sizes[0];
     }
 
+    // TODO: 19-8-26 引入libyuv
+    private static byte[] getDataFromImage(Image image) {
+        Rect crop = image.getCropRect();
+        int format = image.getFormat();
+        int width = crop.width();
+        int height = crop.height();
+        Image.Plane[] planes = image.getPlanes();
+        byte[] data = new byte[width * height * ImageFormat.getBitsPerPixel(format) / 8];
+        byte[] rowData = new byte[planes[0].getRowStride()];
+        Log.v(TAG, "get data from " + planes.length + " planes");
+        int channelOffset = 0;
+        int outputStride = 1;
+        for (int i = 0; i < planes.length; i++) {
+            switch (i) {
+                case 0:
+                    channelOffset = 0;
+                    outputStride = 1;
+                    break;
+                case 1:
+                    channelOffset = width * height + 1;
+                    outputStride = 2;
+                    break;
+                case 2:
+                    channelOffset = width * height;
+                    outputStride = 2;
+                    break;
+            }
+            ByteBuffer buffer = planes[i].getBuffer();
+            int rowStride = planes[i].getRowStride();
+            int pixelStride = planes[i].getPixelStride();
+
+            Log.v(TAG, "pixelStride " + pixelStride);
+            Log.v(TAG, "rowStride " + rowStride);
+            Log.v(TAG, "width " + width);
+            Log.v(TAG, "height " + height);
+            Log.v(TAG, "buffer size " + buffer.remaining());
+            
+            int shift = (i == 0) ? 0 : 1;
+            int w = width >> shift;
+            int h = height >> shift;
+            buffer.position(rowStride * (crop.top >> shift) + pixelStride * (crop.left >> shift));
+            for (int row = 0; row < h; row++) {
+                int length;
+                if (pixelStride == 1 && outputStride == 1) {
+                    length = w;
+                    buffer.get(data, channelOffset, length);
+                    channelOffset += length;
+                } else {
+                    length = (w - 1) * pixelStride + 1;
+                    buffer.get(rowData, 0, length);
+                    for (int col = 0; col < w; col++) {
+                        data[channelOffset] = rowData[col * pixelStride];
+                        channelOffset += outputStride;
+                    }
+                }
+                if (row < h - 1) {
+                    buffer.position(buffer.position() + rowStride - length);
+                }
+            }
+        }
+        return data;
+    }
 }

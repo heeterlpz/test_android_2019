@@ -130,6 +130,11 @@ public class My2DFilterManager {
                 filterList.add(whiteningFilter);
                 filterTypeList.add(Config.FilterName.WHITENING_TYPE);
                 break;
+            case Config.MsgType.FACE_LIFT_TYPE:
+                FaceLiftFilter faceLiftFilter=new FaceLiftFilter(width,height);
+                filterList.add(faceLiftFilter);
+                filterTypeList.add(Config.FilterName.FACE_LIFT_TYPE);
+                break;
             case Config.MsgType.TEST_TYPE:
                 TestFilter testFilter=new TestFilter(width,height);
                 filterList.add(testFilter);
