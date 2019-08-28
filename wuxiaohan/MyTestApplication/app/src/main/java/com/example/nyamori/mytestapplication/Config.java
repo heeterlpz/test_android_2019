@@ -9,6 +9,10 @@ public class Config {
         public static final int MSG_CHANGE_CAMERA=4;
     }
 
+    public static class FaceMsg{
+        public static final int MSG_NEW_IMAGE=0;
+    }
+
     public static class MsgType {
         public static final int NO_TYPE =0;
         public static final int OBSCURE_TYPE=1;

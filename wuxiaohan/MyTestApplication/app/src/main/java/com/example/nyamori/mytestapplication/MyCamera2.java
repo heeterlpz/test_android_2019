@@ -18,6 +18,7 @@ import android.media.ImageReader;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
@@ -43,6 +44,7 @@ public class MyCamera2 {
     private String cameraID;
     private CameraDevice mCamera;
     private Handler mCameraHandler;
+    private Handler mFaceHandler;
     private CaptureRequest.Builder mPreviewBuilder;
     private Surface targetSurface;
 
@@ -51,9 +53,6 @@ public class MyCamera2 {
     private Context mContext;
     private int cameraType;
     private Facepp facepp;
-    private List<Image> imageList;
-    private Thread faceThread;
-    private boolean isThradRunning=false;
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public MyCamera2(Context context){
@@ -61,26 +60,21 @@ public class MyCamera2 {
         cameraType=Config.CAMERA_TYPE.FRONT_TYPE;
         MyFrameRect.setCameraType(cameraType);
         mCameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+        initHandler();
+    }
+
+    private void initHandler() {
         HandlerThread handlerThreadCamera = new HandlerThread("Camera");
         handlerThreadCamera.start();
         mCameraHandler = new Handler(handlerThreadCamera.getLooper());
-        initThread();
-    }
-
-    private void initThread() {
-        faceThread=new Thread(new Runnable() {
+        HandlerThread faceDetectThread=new HandlerThread("face");
+        faceDetectThread.start();
+        mFaceHandler = new Handler(faceDetectThread.getLooper()){
             @Override
-            public void run() {
-                while (isThradRunning){
-                    if(imageList.size()>4){//同样防止可能的溢出，作用不是很大
-                        for (Image image:imageList){
-                            image.close();
-                        }
-                        imageList.clear();
-                    }else if(imageList.size()>0){
-                        Image image=imageList.get(0);
-                        imageList.remove(0);
-
+            public void handleMessage(Message msg) {
+                switch (msg.what){
+                    case Config.FaceMsg.MSG_NEW_IMAGE:
+                        Image image=(Image)msg.obj;
                         if(image!=null){
                             int width=image.getWidth();
                             int height=image.getHeight();
@@ -102,21 +96,16 @@ public class MyCamera2 {
                                 }
                             }
                         }
-                    }else {
-                        try {
-                            Thread.sleep(3);//沉睡3ms
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
+                        break;
+                    default:
+                        break;
                 }
             }
-        });
+        };
     }
 
+
     public void initFaceEngine(){
-        if(imageList==null)imageList=new ArrayList<>();
-        else imageList.clear();
         Faces.setCamera(cameraType);
         
         facepp = new Facepp();
@@ -185,7 +174,8 @@ public class MyCamera2 {
             public void onImageAvailable(ImageReader reader) {
                 Image image=reader.acquireLatestImage();
                 if(image!=null){
-                    imageList.add(image);//在线程里面要记得关闭close image
+                    //在线程里面要记得关闭close image
+                    mFaceHandler.obtainMessage(Config.FaceMsg.MSG_NEW_IMAGE,image).sendToTarget();
                 }
             }
         },mCameraHandler);
@@ -195,7 +185,6 @@ public class MyCamera2 {
         mCamera.close();
         imageReader.close();
         facepp.release();
-        isThradRunning=false;
         if(cameraType== Config.CAMERA_TYPE.FRONT_TYPE){
             cameraType= Config.CAMERA_TYPE.BACK_TYPE;
         }else {
@@ -209,7 +198,6 @@ public class MyCamera2 {
     }
 
     public void destroyCamera() {
-        isThradRunning=false;
         if(mCamera!=null){
             mCamera.close();
             mCamera=null;
@@ -219,9 +207,6 @@ public class MyCamera2 {
         }
         if(facepp!=null){
             facepp.release();
-        }
-        if(imageList!=null){
-            imageList.clear();
         }
     }
 
@@ -273,8 +258,6 @@ public class MyCamera2 {
         public void onConfigured(@NonNull CameraCaptureSession session) {//配置完毕开始预览
             if(mCamera==null)return;
 
-            isThradRunning=true;
-            faceThread.start();
             try {
                 //自动对焦
                 mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
