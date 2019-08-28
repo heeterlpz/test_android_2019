@@ -57,7 +57,7 @@ public class TestFilter extends BaseFilter{
         bottomLoc = GLES20.glGetUniformLocation(mProgramHandle, "bottom");
         edgePointLoc = GLES20.glGetUniformLocation(mProgramHandle, "edgePoint");
         levelLoc = GLES20.glGetUniformLocation(mProgramHandle, "level");
-        level=0.4f;
+        level=0.3f;
     }
 
     @Override

@@ -44,7 +44,7 @@ public class FaceLiftFilter extends BaseFilter {
         super.getLocation();
         edgePointLoc = GLES20.glGetUniformLocation(mProgramHandle, "edgePoint");
         levelLoc = GLES20.glGetUniformLocation(mProgramHandle, "level");
-        level=0.4f;
+        level=0.3f;
     }
 
     @Override
@@ -67,22 +67,22 @@ public class FaceLiftFilter extends BaseFilter {
     public void setLevel(int newLevel) {
         if(newLevel==0){
             isLevelZero=true;
-            level=0.05f;
+            level=0.1f;
         }
         else {
             isLevelZero=false;
-            level=0.05f+newLevel*0.05f;
+            level=0.1f+newLevel*0.025f;
         }
     }
 
     @Override
     public int getLevelMax() {
-        return 8;
+        return 12;
     }
 
     @Override
     public int getLevel() {
-        if(level==0.05f)return 0;
-        else return (int)((level-0.05f)/0.05f);
+        if(level==0.1f)return 0;
+        else return (int)((level-0.1f)/0.025f);
     }
 }

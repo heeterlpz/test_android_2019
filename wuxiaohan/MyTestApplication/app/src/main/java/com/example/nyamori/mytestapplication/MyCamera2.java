@@ -51,6 +51,9 @@ public class MyCamera2 {
     private Context mContext;
     private int cameraType;
     private Facepp facepp;
+    private List<Image> imageList;
+    private Thread faceThread;
+    private boolean isThradRunning=false;
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public MyCamera2(Context context){
@@ -61,11 +64,56 @@ public class MyCamera2 {
         HandlerThread handlerThreadCamera = new HandlerThread("Camera");
         handlerThreadCamera.start();
         mCameraHandler = new Handler(handlerThreadCamera.getLooper());
+        initThread();
+    }
+
+    private void initThread() {
+        faceThread=new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (isThradRunning){
+                    if(imageList.size()>0){
+                        Image image=imageList.get(0);
+                        imageList.remove(0);
+
+                        int width=image.getWidth();
+                        int height=image.getHeight();
+
+                        byte[] data=getDataFromImage(image);//在这个函数里面close了
+
+                        Facepp.Face[] faces = facepp.detect(data, width, height, Facepp.IMAGEMODE_NV21);
+                        Faces.clearList();
+                        if(faces.length>0){
+                            for(Facepp.Face face:faces){
+                                Faces.setFaceInfoList(face.rect,width,height);
+                                facepp.getLandmarkRaw(face,Facepp.FPP_GET_LANDMARK81);
+                                Faces.setPoints(face.points,width,height);
+                            }
+                            Faces.setFaceNumber(faces.length);
+                        }else {
+                            Log.v(TAG, "there is no face");
+                        }
+                        if(imageList.size()>5){//防止可能的溢出，目前没有观测到。
+                            imageList.clear();
+                        }
+                    }else {
+                        Log.v(TAG, "run: no picture");
+                        try {
+                            Thread.sleep(33);//沉睡一帧
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        });
     }
 
     public void initFaceEngine(){
+        if(imageList==null)imageList=new ArrayList<>();
+        else imageList.clear();
         Faces.setCamera(cameraType);
-//
+        
         facepp = new Facepp();
         Log.d("megvii", "initFaceEngine: time="+Facepp.getApiExpirationMillis(mContext,MainActivity.getFileContent(mContext, R.raw.megviifacepp_0_5_2_model)));
         String errorCode = facepp.init(mContext, MainActivity.getFileContent(mContext, R.raw.megviifacepp_0_5_2_model), 1);
@@ -132,27 +180,7 @@ public class MyCamera2 {
             public void onImageAvailable(ImageReader reader) {
                 Image image=reader.acquireLatestImage();
                 if(image!=null){
-                    long time=System.currentTimeMillis();
-                    int width=image.getWidth();
-                    int height=image.getHeight();
-
-                    byte[] data=getDataFromImage(image);
-
-                    final Facepp.Face[] faces = facepp.detect(data, width, height, Facepp.IMAGEMODE_NV21);
-                    Faces.clearList();
-                    if(faces.length>0){
-                        for(Facepp.Face face:faces){
-                            Log.d("megvii", "onImageAvailable: face="+face.rect);
-                            Faces.setFaceInfoList(face.rect,width,height);
-                            facepp.getLandmarkRaw(face,Facepp.FPP_GET_LANDMARK81);
-                            Faces.setPoints(face.points,width,height);
-                        }
-                        Faces.setFaceNumber(faces.length);
-                    }else {
-                        Log.i(TAG, "onImageAvailable: there is no face");
-                    }
-                    Log.i(TAG, "onImageAvailable: face use time="+(System.currentTimeMillis()-time));
-                    image.close();
+                    imageList.add(image);//在线程里面要记得关闭close image
                 }
             }
         },mCameraHandler);
@@ -162,6 +190,7 @@ public class MyCamera2 {
         mCamera.close();
         imageReader.close();
         facepp.release();
+        isThradRunning=false;
         if(cameraType== Config.CAMERA_TYPE.FRONT_TYPE){
             cameraType= Config.CAMERA_TYPE.BACK_TYPE;
         }else {
@@ -175,9 +204,19 @@ public class MyCamera2 {
     }
 
     public void destroyCamera() {
+        isThradRunning=false;
         if(mCamera!=null){
             mCamera.close();
             mCamera=null;
+        }
+        if(imageReader!=null){
+            imageReader.close();
+        }
+        if(facepp!=null){
+            facepp.release();
+        }
+        if(imageList!=null){
+            imageList.clear();
         }
     }
 
@@ -229,6 +268,8 @@ public class MyCamera2 {
         public void onConfigured(@NonNull CameraCaptureSession session) {//配置完毕开始预览
             if(mCamera==null)return;
 
+            isThradRunning=true;
+            faceThread.start();
             try {
                 //自动对焦
                 mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
@@ -324,6 +365,7 @@ public class MyCamera2 {
                 }
             }
         }
+        image.close();//这里close了图片
         return data;
     }
 }
