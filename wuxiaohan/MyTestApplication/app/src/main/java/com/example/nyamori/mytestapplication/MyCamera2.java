@@ -72,34 +72,39 @@ public class MyCamera2 {
             @Override
             public void run() {
                 while (isThradRunning){
-                    if(imageList.size()>0){
+                    if(imageList.size()>4){//同样防止可能的溢出，作用不是很大
+                        for (Image image:imageList){
+                            image.close();
+                        }
+                        imageList.clear();
+                    }else if(imageList.size()>0){
                         Image image=imageList.get(0);
                         imageList.remove(0);
 
-                        int width=image.getWidth();
-                        int height=image.getHeight();
+                        if(image!=null){
+                            int width=image.getWidth();
+                            int height=image.getHeight();
 
-                        byte[] data=getDataFromImage(image);//在这个函数里面close了
+                            byte[] data=getDataFromImage(image);//在这个函数里面close了
 
-                        Facepp.Face[] faces = facepp.detect(data, width, height, Facepp.IMAGEMODE_NV21);
-                        Faces.clearList();
-                        if(faces.length>0){
-                            for(Facepp.Face face:faces){
-                                Faces.setFaceInfoList(face.rect,width,height);
-                                facepp.getLandmarkRaw(face,Facepp.FPP_GET_LANDMARK81);
-                                Faces.setPoints(face.points,width,height);
+                            Facepp.Face[] faces = facepp.detect(data, width, height, Facepp.IMAGEMODE_NV21);
+                            if(faces.length>0){
+                                for(Facepp.Face face:faces){
+                                    Faces.setFaceInfoList(face.rect,width,height);
+                                    facepp.getLandmarkRaw(face,Facepp.FPP_GET_LANDMARK81);
+                                    Faces.setPoints(face.points,width,height);
+                                }
+                                Faces.setFaceNumber(faces.length);
+                            }else {
+                                Log.v(TAG, "there is no face");
+                                if(System.currentTimeMillis()-Faces.lastUpdatetime>1000){//检测不到脸超过1s视为图像中的脸不存在了。
+                                    Faces.clearList();
+                                }
                             }
-                            Faces.setFaceNumber(faces.length);
-                        }else {
-                            Log.v(TAG, "there is no face");
-                        }
-                        if(imageList.size()>5){//防止可能的溢出，目前没有观测到。
-                            imageList.clear();
                         }
                     }else {
-                        Log.v(TAG, "run: no picture");
                         try {
-                            Thread.sleep(33);//沉睡一帧
+                            Thread.sleep(3);//沉睡3ms
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
@@ -154,7 +159,7 @@ public class MyCamera2 {
                 }
             }
             imageReader=ImageReader.newInstance(previewSize.getWidth(), previewSize.getHeight(),
-                    ImageFormat.YUV_420_888,5);
+                    ImageFormat.YUV_420_888,10);
             if(previewSize.getWidth()<width&& previewSize.getHeight()<height){
                 int newHeight=(int)(previewSize.getHeight()*((float)width/ previewSize.getWidth()));
                 Log.d(TAG, "initCamera: new heigth="+newHeight);

@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Faces {
+    public static long lastUpdatetime=0;
     private static List<RectF> faceInfoList;
     private static int faceNumber;
     private static int camera= Config.CAMERA_TYPE.FRONT_TYPE;
@@ -25,6 +26,7 @@ public class Faces {
     }
 
     public static void setPoints(PointF[] points,int width,int height){
+        lastUpdatetime=System.currentTimeMillis();
         if(points.length!=81){
             throw new RuntimeException("wrong points number");
         }else {
@@ -68,7 +70,12 @@ public class Faces {
             bottom =faceRect.right/(float)width;
         }
         RectF fitRect=new RectF(left,top,right,bottom);
-        faceInfoList.add(fitRect);
+        faceInfoList.add(0,fitRect);
+        if(faceInfoList.size()>3){
+            for(int i=1;i<faceInfoList.size();i++){
+                faceInfoList.remove(i);
+            }
+        }
     }
 
     public static int getFaceNumber() {

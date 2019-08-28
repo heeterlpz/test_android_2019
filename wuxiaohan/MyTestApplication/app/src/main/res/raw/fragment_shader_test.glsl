@@ -35,10 +35,10 @@ void main() {
 	float radius;
 	for(int i=3;i<19;i++){
 		if(i<11){
-			radius=distance(edgePoint[i],edgePoint[i+8])*level;
+			radius=distance(edgePoint[i],edgePoint[i+8])*level*(0.97+0.03*float(i));
 			pointToUse=newPointWarp(pointToUse,edgePoint[i],edgePoint[i+8],radius);
 		}else{
-			radius=distance(edgePoint[i],edgePoint[i-8])*level;
+			radius=distance(edgePoint[i],edgePoint[i-8])*level*(0.97+0.03*float(i-8));
 			pointToUse=newPointWarp(pointToUse,edgePoint[i],edgePoint[i-8],radius);
 		}
 	}

@@ -289,7 +289,11 @@ public class MainActivity extends AppCompatActivity {
                                     myOpenGL.addFilter(Config.MsgType.BEAUTY_TYPE);
                                     break;
                                 case R.id.nav_add_face_lift:
-                                    myOpenGL.addFilter(Config.MsgType.FACE_LIFT_TYPE);
+                                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
+                                        myOpenGL.addFilter(Config.MsgType.FACE_LIFT_TYPE);
+                                    }else {
+                                        Toast.makeText(MainActivity.this,"5.0以下版本暂不支持",Toast.LENGTH_SHORT).show();
+                                    }
                                     break;
                                 case R.id.nav_test:
                                     myOpenGL.changeFilterType(Config.MsgType.TEST_TYPE);

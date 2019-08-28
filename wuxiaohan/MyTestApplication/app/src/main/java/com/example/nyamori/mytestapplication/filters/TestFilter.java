@@ -73,7 +73,7 @@ public class TestFilter extends BaseFilter{
             }
         }else {
             rectF=new RectF(0,0,0,0);
-            edgeArray=new float[]{0};
+            edgeArray=new float[38];
         }
         Log.i(TAG, "setUniform: rect="+rectF);
         GLES20.glUniform1f(leftLoc,rectF.left);
@@ -81,6 +81,6 @@ public class TestFilter extends BaseFilter{
         GLES20.glUniform1f(rightLoc,rectF.right);
         GLES20.glUniform1f(bottomLoc,rectF.bottom);
         GLES20.glUniform1f(levelLoc,level);
-        GLES20.glUniform2fv(edgePointLoc,edgePoint.length,edgeArray,0);
+        GLES20.glUniform2fv(edgePointLoc,19,edgeArray,0);
     }
 }

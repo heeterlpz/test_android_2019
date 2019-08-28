@@ -57,10 +57,10 @@ public class FaceLiftFilter extends BaseFilter {
                 edgeArray[i*2+1]=edgePoint[i].y;
             }
         }else {
-            edgeArray=new float[]{0};
+            edgeArray=new float[38];
         }
         GLES20.glUniform1f(levelLoc,level);
-        GLES20.glUniform2fv(edgePointLoc,edgePoint.length,edgeArray,0);
+        GLES20.glUniform2fv(edgePointLoc,19,edgeArray,0);
     }
 
     @Override
@@ -71,18 +71,18 @@ public class FaceLiftFilter extends BaseFilter {
         }
         else {
             isLevelZero=false;
-            level=0.1f+newLevel*0.025f;
+            level=0.1f+newLevel*0.0125f;
         }
     }
 
     @Override
     public int getLevelMax() {
-        return 12;
+        return 24;
     }
 
     @Override
     public int getLevel() {
         if(level==0.1f)return 0;
-        else return (int)((level-0.1f)/0.025f);
+        else return (int)((level-0.1f)/0.0125f);
     }
 }
