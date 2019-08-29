@@ -135,6 +135,11 @@ public class My2DFilterManager {
                 filterList.add(faceLiftFilter);
                 filterTypeList.add(Config.FilterName.FACE_LIFT_TYPE);
                 break;
+            case Config.MsgType.BIG_EYE_TYPE:
+                BigEyeFilter bigEyeFilter=new BigEyeFilter(width,height);
+                filterList.add(bigEyeFilter);
+                filterTypeList.add(Config.FilterName.BIG_EYE_TYPE);
+                break;
             case Config.MsgType.TEST_TYPE:
                 TestFilter testFilter=new TestFilter(width,height);
                 filterList.add(testFilter);

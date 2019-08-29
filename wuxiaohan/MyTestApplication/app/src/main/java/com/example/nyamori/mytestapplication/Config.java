@@ -25,6 +25,7 @@ public class Config {
         public static final int BEAUTY_TYPE=8;
         public static final int WHITENING_TYPE=9;
         public static final int FACE_LIFT_TYPE =10;
+        public static final int BIG_EYE_TYPE=11;
         public static final int TEST_TYPE=100;
     }
 
@@ -39,6 +40,7 @@ public class Config {
         public static final String BEAUTY_TYPE="磨皮美颜";
         public static final String WHITENING_TYPE="美白";
         public static final String FACE_LIFT_TYPE ="瘦脸";
+        public static final String BIG_EYE_TYPE="大眼";
         public static final String TEST_TYPE="测试";
     }
 
@@ -46,6 +48,7 @@ public class Config {
         public static final int UI_UPDATE_FPS = 0;
         public static final int UI_UPDATE_LIST=1;
         public static final int GL_SURFACE_PREPARE=2;
+        public static final int FACE_SUCCESS=3;
     }
 
     public static class CAMERA_TYPE{

@@ -53,6 +53,7 @@ public class MyCamera2 {
     private Context mContext;
     private int cameraType;
     private Facepp facepp;
+    private boolean isFaceppInit=false;
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public MyCamera2(Context context){
@@ -84,14 +85,15 @@ public class MyCamera2 {
                             Facepp.Face[] faces = facepp.detect(data, width, height, Facepp.IMAGEMODE_NV21);
                             if(faces.length>0){
                                 for(Facepp.Face face:faces){
+                                    Faces.setSize(width,height);
                                     Faces.setFaceInfoList(face.rect,width,height);
                                     facepp.getLandmarkRaw(face,Facepp.FPP_GET_LANDMARK81);
-                                    Faces.setPoints(face.points,width,height);
+                                    Faces.setPoints(face.points);
                                 }
                                 Faces.setFaceNumber(faces.length);
                             }else {
                                 Log.v(TAG, "there is no face");
-                                if(System.currentTimeMillis()-Faces.lastUpdatetime>1000){//检测不到脸超过1s视为图像中的脸不存在了。
+                                if(System.currentTimeMillis()-Faces.lastUpdatetime>500){//检测不到脸超过500ms视为图像中的脸不存在了。
                                     Faces.clearList();
                                 }
                             }
@@ -107,7 +109,6 @@ public class MyCamera2 {
 
     public void initFaceEngine(){
         Faces.setCamera(cameraType);
-        
         facepp = new Facepp();
         Log.d("megvii", "initFaceEngine: time="+Facepp.getApiExpirationMillis(mContext,MainActivity.getFileContent(mContext, R.raw.megviifacepp_0_5_2_model)));
         String errorCode = facepp.init(mContext, MainActivity.getFileContent(mContext, R.raw.megviifacepp_0_5_2_model), 1);
@@ -122,10 +123,10 @@ public class MyCamera2 {
             faceppConfig.rotation=90;
         }
         facepp.setFaceppConfig(faceppConfig);
+        isFaceppInit=true;
     }
 
     public ViewPort initCamera(int width,int height){
-        initFaceEngine();
         Size previewSize = new Size(width, height);
         try{
             for (String cameraID:mCameraManager.getCameraIdList()){
@@ -148,7 +149,7 @@ public class MyCamera2 {
                 }
             }
             imageReader=ImageReader.newInstance(previewSize.getWidth(), previewSize.getHeight(),
-                    ImageFormat.YUV_420_888,10);
+                    ImageFormat.YUV_420_888,15);
             if(previewSize.getWidth()<width&& previewSize.getHeight()<height){
                 int newHeight=(int)(previewSize.getHeight()*((float)width/ previewSize.getWidth()));
                 Log.d(TAG, "initCamera: new heigth="+newHeight);
@@ -174,8 +175,11 @@ public class MyCamera2 {
             public void onImageAvailable(ImageReader reader) {
                 Image image=reader.acquireLatestImage();
                 if(image!=null){
-                    //在线程里面要记得关闭close image
-                    mFaceHandler.obtainMessage(Config.FaceMsg.MSG_NEW_IMAGE,image).sendToTarget();
+                    if(!isFaceppInit)image.close();
+                    //记得close image
+                    else{
+                        mFaceHandler.obtainMessage(Config.FaceMsg.MSG_NEW_IMAGE,image).sendToTarget();
+                    }
                 }
             }
         },mCameraHandler);
@@ -185,12 +189,15 @@ public class MyCamera2 {
         mCamera.close();
         imageReader.close();
         facepp.release();
+        Faces.clearList();
+        isFaceppInit=false;
         if(cameraType== Config.CAMERA_TYPE.FRONT_TYPE){
             cameraType= Config.CAMERA_TYPE.BACK_TYPE;
         }else {
             cameraType= Config.CAMERA_TYPE.FRONT_TYPE;
         }
         MyFrameRect.setCameraType(cameraType);
+        initFaceEngine();
         ViewPort viewPort=initCamera(width,height);
         setTargetSurface(null);
         openCamera();
@@ -198,6 +205,8 @@ public class MyCamera2 {
     }
 
     public void destroyCamera() {
+        isFaceppInit=false;
+        Faces.clearList();
         if(mCamera!=null){
             mCamera.close();
             mCamera=null;

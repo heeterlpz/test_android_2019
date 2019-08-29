@@ -7,51 +7,45 @@ uniform float right;
 uniform float bottom;
 uniform float level;
 uniform vec2 edgePoint[19];
-vec2 newPointWarp(vec2 textureCoord, vec2 originPosition, vec2 targetPosition, float radius)
-{
-	vec2 offset = vec2(0.0);
+uniform vec2 rightEyePoint[5];
+uniform vec2 leftEyePoint[5];
+vec2 newPointBigEye(vec2 textureCoord, vec2 center,float radius,float intensity,float curve){
+	vec2 offset = textureCoord-center;
 	vec2 result = textureCoord;
-	float dis=distance(textureCoord,originPosition);
+	float dis=distance(textureCoord,center);
 	if(dis<radius){
-		vec2 direction =targetPosition - originPosition;
-		
-		float length=distance(targetPosition,originPosition);
-		float dradius=radius*radius;
-		float ddmc = length*length;
-		float ddis = dis*dis;
-		
-		float infect = (dradius-ddis)/(dradius-ddis+ddmc);
-		infect=infect*infect;
-		
-		offset =infect*direction;
-		result = textureCoord - offset;
+		float weight=dis/radius;
+		weight=1.0-intensity*(1.0-pow(weight,curve));
+		weight=clamp(weight,0.0,1.0);
+		result=center+offset*weight;
 	}
 	return result;
 }
 void main() {
-	float step= 1.0/1000.0;
-	float r=1.0/250.0;
+	float r=1.0/500.0;
 	vec2 pointToUse=vTextureCoord;
-	float radius;
-	for(int i=3;i<19;i++){
-		if(i<11){
-			radius=distance(edgePoint[i],edgePoint[i+8])*level*(0.97+0.03*float(i));
-			pointToUse=newPointWarp(pointToUse,edgePoint[i],edgePoint[i+8],radius);
-		}else{
-			radius=distance(edgePoint[i],edgePoint[i-8])*level*(0.97+0.03*float(i-8));
-			pointToUse=newPointWarp(pointToUse,edgePoint[i],edgePoint[i-8],radius);
-		}
-	}
+	float leftradius1=distance(leftEyePoint[1],leftEyePoint[2]);
+	float leftradius2=distance(leftEyePoint[3],leftEyePoint[4]);
+	float rightradius1=distance(rightEyePoint[1],rightEyePoint[2]);
+	float rightradius2=distance(rightEyePoint[3],rightEyePoint[4]);
+	pointToUse=newPointBigEye(pointToUse,leftEyePoint[0],leftradius1,0.2,3.0);
+	pointToUse=newPointBigEye(pointToUse,leftEyePoint[0],leftradius2,0.3,3.0);
+	pointToUse=newPointBigEye(pointToUse,rightEyePoint[0],rightradius1,0.2,3.0);
+	pointToUse=newPointBigEye(pointToUse,rightEyePoint[0],rightradius2,0.3,3.0);
 	vec4 color=texture2D(sTexture, pointToUse);
-	if(vTextureCoord.x>left-step&&vTextureCoord.x<left+step
+	if(vTextureCoord.x>left-r&&vTextureCoord.x<left+r
 	&&vTextureCoord.y>top&&vTextureCoord.y<bottom)color=vec4(1.0);
-	if(vTextureCoord.x>right-step&&vTextureCoord.x<right+step
+	if(vTextureCoord.x>right-r&&vTextureCoord.x<right+r
 	&&vTextureCoord.y>top&&vTextureCoord.y<bottom)color=vec4(1.0);
-	if(vTextureCoord.y>top-step&&vTextureCoord.y<top+step
+	if(vTextureCoord.y>top-r&&vTextureCoord.y<top+r
 	&&vTextureCoord.x>left&&vTextureCoord.x<right)color=vec4(1.0);
-	if(vTextureCoord.y>bottom-step&&vTextureCoord.y<bottom+step
+	if(vTextureCoord.y>bottom-r&&vTextureCoord.y<bottom+r
 	&&vTextureCoord.x>left&&vTextureCoord.x<right)color=vec4(1.0);
 	for(int i=0;i<19;i++){
+		if(i<5){
+			if(distance(vTextureCoord,rightEyePoint[i])<r)color=vec4(1.0,1.0,0.0,1.0);
+			if(distance(vTextureCoord,leftEyePoint[i])<r)color=vec4(1.0,1.0,0.0,1.0);
+		}
 		if(distance(vTextureCoord,edgePoint[i])<r){
 			color=vec4(1.0,0.0,0.0,1.0);
 		}

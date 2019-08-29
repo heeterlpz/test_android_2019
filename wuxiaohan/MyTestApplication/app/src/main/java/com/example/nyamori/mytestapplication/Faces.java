@@ -4,52 +4,69 @@ package com.example.nyamori.mytestapplication;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.util.Log;
 
-import java.util.ArrayList;
-import java.util.List;
 
 public class Faces {
     public static long lastUpdatetime=0;
-    private static List<RectF> faceInfoList;
+    private static RectF faceInfo;
     private static int faceNumber;
     private static int camera= Config.CAMERA_TYPE.FRONT_TYPE;
+    private static int width;
+    private static int height;
 
     private static PointF[] edgePoints=new PointF[19];
+    private static PointF[] rightEyePoints=new PointF[5];
+    private static PointF[] leftEyePoints=new PointF[5];
 
-    static {
-        faceInfoList=new ArrayList<>();
+    public static void setSize(int width,int height){
+        Faces.width=width;
+        Faces.height=height;
     }
 
-    public static List<RectF> getFaceInfoList() {
-        return faceInfoList;
+    public static RectF getFaceInfoList() {
+        return faceInfo;
     }
 
-    public static void setPoints(PointF[] points,int width,int height){
+    public static void setPoints(PointF[] points){
         lastUpdatetime=System.currentTimeMillis();
         if(points.length!=81){
             throw new RuntimeException("wrong points number");
         }else {
-            int eNum=0;
-            for(int i=62;i<81;i++){
-                float x,y;
-                if(camera== Config.CAMERA_TYPE.FRONT_TYPE){
-                    x=1-points[i].y/height;
-                    y=points[i].x/width;
-                }else {
-                    x=points[i].y/height;
-                    y=1-points[i].x/width;
+            for(int i=0;i<81;i++){
+                if(i<5){
+                    rightEyePoints[i]=adjustPoint(points[i]);
+                }else if(i>8&&i<14){
+                    leftEyePoints[i-9]=adjustPoint(points[i]);
+                }else if(i>61){
+                    edgePoints[i-62]=adjustPoint(points[i]);
                 }
-                edgePoints[eNum]=new PointF(x,y);
-                Log.v("test", "setPoints: a point="+edgePoints[eNum]);
-                eNum++;
             }
-            eNum=0;
         }
+    }
+
+    private static PointF adjustPoint(PointF point){
+        float x,y;
+        if(camera== Config.CAMERA_TYPE.FRONT_TYPE){
+            x=1-point.y/height;
+            y=point.x/width;
+        }else {
+            //暂时没有验证的转换 后置
+            x=point.y/height;
+            y=1-point.x/width;
+        }
+        return new PointF(x,y);
     }
 
     public static PointF[] getEdgePoints() {
         return edgePoints;
+    }
+
+    public static PointF[] getLeftEyePoints() {
+        return leftEyePoints;
+    }
+
+    public static PointF[] getRightEyePoints() {
+        return rightEyePoints;
     }
 
     public static void setFaceInfoList(Rect faceRect,int width,int height) {
@@ -69,13 +86,8 @@ public class Faces {
             top = faceRect.left/(float)width;
             bottom =faceRect.right/(float)width;
         }
-        RectF fitRect=new RectF(left,top,right,bottom);
-        faceInfoList.add(0,fitRect);
-        if(faceInfoList.size()>3){
-            for(int i=1;i<faceInfoList.size();i++){
-                faceInfoList.remove(i);
-            }
-        }
+        faceInfo= new RectF(left,top,right,bottom);
+
     }
 
     public static int getFaceNumber() {
@@ -87,7 +99,7 @@ public class Faces {
     }
 
     public static void clearList(){
-        faceInfoList.clear();
+        faceInfo=null;
         faceNumber=0;
     }
 

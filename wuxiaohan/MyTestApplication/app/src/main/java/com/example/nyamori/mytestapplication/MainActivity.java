@@ -81,11 +81,10 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(MainActivity.this, new String[]{"android.permission.CAMERA","android.permission.READ_PHONE_STATE"}, 1);
         }else {
             filters=new ArrayList<>();
-            initDrawer();
             initSurfaceView();
-            ShaderLoader.getInstance(this);
-
             activeEngine();
+            initDrawer();
+            ShaderLoader.getInstance(this);
         }
     }
 
@@ -108,12 +107,13 @@ public class MainActivity extends AppCompatActivity {
         final LicenseManager licenseManager = new LicenseManager(this);
         String uuid = getUUIDString();
         long apiName = Facepp.getApiName();
-        licenseManager.setExpirationMillis(Facepp.getApiExpirationMillis(this,modelData));
+        mUIHandler.obtainMessage(Config.UIMsg.FACE_SUCCESS).sendToTarget();
 //        licenseManager.takeLicenseFromNetwork(SecretConfig.CN_LICENSE_URL,uuid, SecretConfig.API_KEY, SecretConfig.API_SECRET, apiName,
 //                "1", new LicenseManager.TakeLicenseCallback() {
 //                    @Override
 //                    public void onSuccess() {
 //                        Toast.makeText(getApplicationContext(),"人脸识别已激活",Toast.LENGTH_SHORT).show();
+//                        mUIHandler.obtainMessage(Config.UIMsg.FACE_SUCCESS).sendToTarget();
 //                        Log.i(TAG, "onSuccess: 1");
 //                    }
 //
@@ -179,8 +179,9 @@ public class MainActivity extends AppCompatActivity {
                     filters=new ArrayList<>();
                     initDrawer();
                     initSurfaceView();
-                    ShaderLoader.getInstance(this);
                     activeEngine();
+                    ShaderLoader.getInstance(this);
+
                 }
             }
         }
@@ -213,10 +214,6 @@ public class MainActivity extends AppCompatActivity {
         mUIHandler.removeCallbacksAndMessages(null);
         super.onDestroy();
     }
-
-
-
-
 
     private void initDrawer() {
         withOpenGL= findViewById(R.id.with_OpenGL);
@@ -295,8 +292,15 @@ public class MainActivity extends AppCompatActivity {
                                         Toast.makeText(MainActivity.this,"5.0以下版本暂不支持",Toast.LENGTH_SHORT).show();
                                     }
                                     break;
+                                case R.id.nav_add_big_eye:
+                                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
+                                        myOpenGL.addFilter(Config.MsgType.BIG_EYE_TYPE);
+                                    }else {
+                                        Toast.makeText(MainActivity.this,"5.0以下版本暂不支持",Toast.LENGTH_SHORT).show();
+                                    }
+                                    break;
                                 case R.id.nav_test:
-                                    myOpenGL.changeFilterType(Config.MsgType.TEST_TYPE);
+                                    myOpenGL.addFilter(Config.MsgType.TEST_TYPE);
                                 default:
                                     break;
                             }
@@ -325,6 +329,8 @@ public class MainActivity extends AppCompatActivity {
                     settingDialogs("美白强度",myOpenGL.getFilter(position));
                 }else if(filterName.equals(Config.FilterName.FACE_LIFT_TYPE)){
                     settingDialogs("瘦脸程度",myOpenGL.getFilter(position));
+                }else if(filterName.equals(Config.FilterName.BIG_EYE_TYPE)){
+                    settingDialogs("放大程度",myOpenGL.getFilter(position));
                 }else {
                     Toast.makeText(MainActivity.this,"暂时不支持该滤镜的设置",Toast.LENGTH_SHORT).show();
                 }
@@ -382,6 +388,11 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("HandlerLeak")
     private void initSurfaceView() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            myCamera2 =new MyCamera2(getApplicationContext());
+        }else {
+            myCamera=new MyCamera();
+        }
         mUIHandler=new Handler(){
             @Override
             public void handleMessage(Message msg) {
@@ -404,6 +415,12 @@ public class MainActivity extends AppCompatActivity {
                             myCamera.setTargetSurface(surfaceTexture);
                             myCamera.openCamera();
                         }
+                        break;
+                    case Config.UIMsg.FACE_SUCCESS:
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            myCamera2.initFaceEngine();
+                        }
+                        break;
                 }
             }
         };
@@ -416,10 +433,8 @@ public class MainActivity extends AppCompatActivity {
                 Log.v(TAG, "onSurfaceTextureAvailable: size="+width+"x"+height);
                 myOpenGL=new MyOpenGL(mUIHandler,new Surface(surface));
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    myCamera2 =new MyCamera2(getApplicationContext());
                     myOpenGL.init(myCamera2.initCamera(width,height));
                 }else {
-                    myCamera=new MyCamera();
                     myOpenGL.init(myCamera.initCamera(width,height));
                 }
             }

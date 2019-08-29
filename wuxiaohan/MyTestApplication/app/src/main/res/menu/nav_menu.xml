@@ -12,15 +12,21 @@
                 <item
                     android:id="@+id/nav_whitening"
                     android:title="美白"/>
-                <item
-                    android:id="@+id/nav_test"
-                    android:title="测试"/>
             </menu>
         </item>
 
         <item
             android:title="添加">
             <menu>
+                <item
+                    android:id="@+id/nav_test"
+                    android:title="测试"/>
+                <item
+                    android:title="瘦脸"
+                    android:id="@+id/nav_add_face_lift"/>
+                <item
+                    android:title="眼睛放大"
+                    android:id="@+id/nav_add_big_eye"/>
                 <item
                     android:id="@+id/nav_bw"
                     android:title="黑白"/>
@@ -49,9 +55,6 @@
                 <item
                     android:title="磨皮美颜"
                     android:id="@+id/nav_add_beauty"/>
-                <item
-                    android:title="瘦脸"
-                    android:id="@+id/nav_add_face_lift"/>
             </menu>
         </item>
 
